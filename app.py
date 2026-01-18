@@ -38,14 +38,35 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS - Enhanced with UI/UX Pro Max Design System
-# Design System: B2B Professional Academic Research Tool
-# Color Palette: Professional Blue + Neutral Grey (Trust & Authority)
-# Typography: Editorial Classic (Cormorant Garamond + Libre Baskerville)
+# Custom CSS - Modern Professional Design System
+# Design System: Clean, Modern Academic Research Tool
+# Color Palette: Refined Blue-Grey (Professional & Trustworthy)
+# Typography: Inter (Clean Sans-Serif) + System Fonts
 st.markdown("""
 <style>
-    /* Import Professional Typography */
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+    /* Import Modern Typography */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    /* Professional Icon System using Unicode and SVG */
+    .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.25em;
+        height: 1.25em;
+        margin-right: 0.5em;
+    }
+
+    .icon-check::before { content: "✓"; font-weight: 600; }
+    .icon-circle::before { content: "○"; }
+    .icon-key::before { content: "🔑"; }
+    .icon-book::before { content: "📖"; }
+    .icon-search::before { content: "🔍"; }
+    .icon-sparkles::before { content: "✨"; }
+    .icon-info::before { content: "ⓘ"; font-weight: 600; }
+    .icon-warning::before { content: "⚠"; }
+    .icon-error::before { content: "✕"; font-weight: 600; }
+    .icon-download::before { content: "↓"; font-weight: 600; }
 
     /* Global Styles */
     * {
@@ -56,121 +77,124 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Main Headers - Editorial Typography */
+    /* Main Headers - Prominent Modern Typography */
     .main-header {
-        font-size: 2.8rem;
-        font-weight: 600;
+        font-size: 2.75rem;
+        font-weight: 700;
         color: #0F172A;
         text-align: center;
-        margin-bottom: 0.5rem;
-        font-family: 'Cormorant Garamond', serif;
-        letter-spacing: -0.02em;
+        margin-bottom: 0.75rem;
+        margin-top: 1rem;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
     }
     .sub-header {
-        font-size: 1.1rem;
-        color: #334155;
+        font-size: 1.125rem;
+        color: #475569;
         text-align: center;
         margin-bottom: 2.5rem;
         font-weight: 400;
-        font-family: 'Libre Baskerville', serif;
-        line-height: 1.6;
+        font-family: 'Inter', sans-serif;
+        line-height: 1.5;
     }
 
-    /* Step Headers - Professional Academic Style */
+    /* Step Headers - Clean Modern Style */
     .step-header {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         font-weight: 600;
-        color: #0F172A;
-        margin-top: 2rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid #E2E8F0;
-        font-family: 'Cormorant Garamond', serif;
+        color: #1E293B;
+        margin-top: 2.5rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0;
+        border-bottom: none;
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
-    /* Workflow Progress Indicator - Professional Blue Gradient */
+    /* Workflow Progress Indicator - Modern Clean Design */
     .workflow-tracker {
-        background: linear-gradient(135deg, #0F172A 0%, #0369A1 100%);
-        color: white;
-        padding: 1.75rem;
+        background: #F8FAFC;
+        border: 2px solid #E2E8F0;
+        padding: 1.5rem;
         border-radius: 12px;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .step-indicator {
         display: inline-block;
-        margin: 0.5rem;
-        padding: 0.65rem 1.25rem;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.15);
+        margin: 0.35rem;
+        padding: 0.625rem 1rem;
+        border-radius: 6px;
+        background: white;
         font-weight: 500;
         font-family: 'Inter', sans-serif;
-        transition: all 200ms ease;
-        font-size: 0.95rem;
+        transition: all 150ms ease;
+        font-size: 0.875rem;
+        border: 1.5px solid #E2E8F0;
     }
     .step-completed {
-        background: rgba(5, 150, 105, 0.3);
-        border: 1px solid rgba(5, 150, 105, 0.4);
+        background: #ECFDF5;
+        border-color: #10B981;
+        color: #047857;
     }
     .step-current {
-        background: rgba(3, 105, 161, 0.4);
-        border: 2px solid white;
-        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+        background: #EFF6FF;
+        border-color: #3B82F6;
+        color: #1D4ED8;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
     .step-pending {
-        background: rgba(255, 255, 255, 0.08);
-        opacity: 0.7;
+        background: white;
+        border-color: #E2E8F0;
+        color: #94A3B8;
     }
 
-    /* Info Boxes - Professional Academic Style */
+    /* Info Boxes - Modern Clean Style */
     .info-box {
-        background-color: #F1F5F9;
-        padding: 1.5rem;
-        border-radius: 10px;
+        background-color: #F0F9FF;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
         margin: 1rem 0;
-        border-left: 4px solid #0369A1;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
-        font-family: 'Libre Baskerville', serif;
-        font-size: 0.95rem;
-        line-height: 1.7;
-        color: #0F172A;
+        border-left: 3px solid #0EA5E9;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: #0C4A6E;
     }
     .success-box {
-        background-color: #ECFDF5;
-        padding: 1.5rem;
-        border-radius: 10px;
+        background-color: #F0FDF4;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
         margin: 1rem 0;
-        border-left: 4px solid #059669;
-        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.08);
-        font-family: 'Libre Baskerville', serif;
-        font-size: 0.95rem;
-        line-height: 1.7;
-        color: #064E3B;
+        border-left: 3px solid #10B981;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: #065F46;
     }
     .warning-box {
         background-color: #FFFBEB;
-        padding: 1.5rem;
-        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
         margin: 1rem 0;
-        border-left: 4px solid #D97706;
-        box-shadow: 0 2px 6px rgba(217, 119, 6, 0.08);
-        font-family: 'Libre Baskerville', serif;
-        font-size: 0.95rem;
-        line-height: 1.7;
-        color: #78350F;
+        border-left: 3px solid #F59E0B;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: #92400E;
     }
     .error-box {
         background-color: #FEF2F2;
-        padding: 1.5rem;
-        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
         margin: 1rem 0;
-        border-left: 4px solid #DC2626;
-        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);
-        font-family: 'Libre Baskerville', serif;
-        font-size: 0.95rem;
-        line-height: 1.7;
-        color: #7F1D1D;
+        border-left: 3px solid #EF4444;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: #991B1B;
     }
 
     /* Cards and Containers */
@@ -183,22 +207,28 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* Progress Messages - Professional Blue */
+    /* Progress Messages - Modern Animated */
     .progress-message {
-        background: linear-gradient(135deg, #0F172A 0%, #0369A1 100%);
-        color: white;
-        padding: 1.25rem 1.75rem;
-        border-radius: 10px;
+        background: #EFF6FF;
+        color: #1E40AF;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
         margin: 1rem 0;
         text-align: center;
         font-weight: 500;
         font-family: 'Inter', sans-serif;
+        border: 2px solid #BFDBFE;
         animation: pulse 2s ease-in-out infinite;
-        box-shadow: 0 4px 12px rgba(3, 105, 161, 0.15);
     }
     @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.85; }
+        0%, 100% {
+            border-color: #BFDBFE;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        }
+        50% {
+            border-color: #60A5FA;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
     }
 
     /* Sidebar Styling */
@@ -257,21 +287,22 @@ st.markdown("""
 
     /* Typography Improvements */
     body {
-        font-family: 'Libre Baskerville', serif;
-        line-height: 1.7;
-        color: #0F172A;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        line-height: 1.6;
+        color: #1E293B;
     }
 
     p {
         max-width: 75ch;
-        line-height: 1.7;
+        line-height: 1.6;
     }
 
     /* Streamlit Element Overrides */
     .stTextInput > label, .stSelectbox > label {
         font-family: 'Inter', sans-serif;
         font-weight: 500;
-        color: #0F172A;
+        color: #1E293B;
+        font-size: 0.875rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -318,10 +349,10 @@ def render_workflow_tracker():
         current_step = 4
 
     steps = [
-        {"num": 1, "name": "API Setup", "icon": "🔑"},
-        {"num": 2, "name": "Upload Book", "icon": "📚"},
-        {"num": 3, "name": "Analyze", "icon": "🔍"},
-        {"num": 4, "name": "Generate", "icon": "✨"}
+        {"num": 1, "name": "API Setup"},
+        {"num": 2, "name": "Upload Book"},
+        {"num": 3, "name": "Analyze"},
+        {"num": 4, "name": "Generate"}
     ]
 
     workflow_html = '<div class="workflow-tracker"><div style="text-align: center;">'
@@ -332,12 +363,12 @@ def render_workflow_tracker():
             icon = "✓"
         elif step["num"] == current_step:
             status_class = "step-current"
-            icon = step["icon"]
+            icon = f"{step['num']}"
         else:
             status_class = "step-pending"
-            icon = "○"
+            icon = f"{step['num']}"
 
-        workflow_html += f'<span class="step-indicator {status_class}">{icon} Step {step["num"]}: {step["name"]}</span>'
+        workflow_html += f'<span class="step-indicator {status_class}">{icon}. {step["name"]}</span>'
 
     workflow_html += '</div></div>'
     st.markdown(workflow_html, unsafe_allow_html=True)
@@ -394,10 +425,21 @@ def main():
     st.markdown('<p class="main-header">Forward Thinking - Foresight</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Generate Future-Oriented Appendices for Academic Books</p>', unsafe_allow_html=True)
 
-    # Demo Mode Toggle
-    col1, col2, col3 = st.columns([2, 1, 2])
-    with col2:
-        if st.button("🎯 Try Demo Mode" if not st.session_state.demo_mode else "🔄 Exit Demo", use_container_width=True):
+    # Demo Mode indicator (if active)
+    if st.session_state.demo_mode:
+        st.markdown('<div class="info-box"><strong>Demo Mode Active</strong> – Using sample book data. Try the full workflow without uploading a PDF!</div>', unsafe_allow_html=True)
+
+    # Workflow Tracker
+    render_workflow_tracker()
+
+    # Sidebar
+    with st.sidebar:
+        st.markdown("### Configuration")
+
+        # Demo Mode Toggle (moved to sidebar)
+        if st.button("Try Demo Mode" if not st.session_state.demo_mode else "Exit Demo Mode",
+                     use_container_width=True,
+                     type="secondary"):
             if not st.session_state.demo_mode:
                 load_demo_data()
                 st.rerun()
@@ -410,26 +452,17 @@ def main():
                 st.session_state.generated_appendices = {}
                 st.rerun()
 
-    if st.session_state.demo_mode:
-        st.markdown('<div class="info-box">ℹ️ <strong>Demo Mode Active</strong> - Using sample book data. Try the full workflow without uploading a PDF!</div>', unsafe_allow_html=True)
+        st.divider()
 
-    # Workflow Tracker
-    render_workflow_tracker()
-
-    # Sidebar
-    with st.sidebar:
-        st.markdown("### ⚙️ Configuration")
-
-        # Developer Mode Indicator
+        # Developer Mode Indicator (compact)
         if DEVELOPER_MODE:
-            st.markdown('<div class="success-box">🔧 <strong>Developer Mode Active</strong></div>', unsafe_allow_html=True)
             if st.session_state.api_key_valid:
-                st.markdown(f'<div class="info-box">✓ API Key Auto-Loaded<br><small>Model: {st.session_state.working_model}</small></div>', unsafe_allow_html=True)
+                st.success("✓ Developer Mode: API Auto-Loaded")
             else:
-                st.markdown('<div class="warning-box">⚠ No valid API key in .env file</div>', unsafe_allow_html=True)
+                st.warning("Developer Mode: No API key")
 
         # API Key input
-        st.subheader("1. API Key")
+        st.subheader("API Key")
 
         # Show API key input field (pre-filled in dev mode, but still editable)
         default_key = st.session_state.get('api_key', '') if DEVELOPER_MODE else ''
@@ -444,7 +477,7 @@ def main():
         if api_key:
             if st.button("Validate Key"):
                 progress_placeholder = st.empty()
-                progress_placeholder.markdown('<div class="progress-message">🔑 Validating your API key...</div>', unsafe_allow_html=True)
+                progress_placeholder.markdown('<div class="progress-message">Validating your API key...</div>', unsafe_allow_html=True)
 
                 success, message = test_api_key(api_key)
                 progress_placeholder.empty()
@@ -454,48 +487,40 @@ def main():
                     st.session_state.api_key = api_key
                     st.session_state.working_model = get_working_model(api_key)
                     configure_gemini(api_key)
-                    st.markdown(f'<div class="success-box success-animation">✓ {message}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="success-box success-animation"><strong>✓ Connected</strong> – {message}</div>', unsafe_allow_html=True)
                     st.rerun()
                 else:
                     st.session_state.api_key_valid = False
-                    st.markdown(f'<div class="error-box">✗ {message}<br><br>💡 <strong>Need help?</strong> Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="error-box"><strong>Connection Failed</strong> – {message}<br><br><strong>Need help?</strong> Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color: inherit; text-decoration: underline;">Google AI Studio</a></div>', unsafe_allow_html=True)
 
         if st.session_state.api_key_valid:
-            st.markdown('<div class="success-box">✓ API Connected</div>', unsafe_allow_html=True)
-        
+            st.success("✓ API Connected")
+
         st.divider()
-        
-        # Settings
-        st.subheader("2. Settings")
-        time_horizon = st.text_input("Time Horizon", value="2040-2050")
-        word_count = st.text_input("Target Word Count", value="2500-3500")
-        
-        st.divider()
-        
-        # Help
-        st.subheader("ℹ️ Help")
-        st.markdown("""
-        **Workflow:**
-        1. Enter your Gemini API key
-        2. Upload a PDF book
-        3. Analyze to create planning table
-        4. Review and adjust if needed
-        5. Generate appendices
-        
-        **Get API Key:**
-        Visit [Google AI Studio](https://aistudio.google.com/apikey)
-        """)
+
+        # Help - Compact version
+        with st.expander("Quick Help", expanded=False):
+            st.markdown("""
+            **Workflow:**
+            1. Enter your Gemini API key
+            2. Upload a PDF book
+            3. Analyze to create planning table
+            4. Review and adjust if needed
+            5. Generate appendices
+
+            **Get API Key:** [Google AI Studio](https://aistudio.google.com/apikey)
+            """, unsafe_allow_html=True)
     
     # Main content area
     if not st.session_state.api_key_valid:
         st.markdown("""
         <div class="info-box" style="text-align: center; padding: 2rem;">
-            <h3 style="margin-top: 0;">🔑 API Key Required</h3>
+            <h3 style="margin-top: 0; font-weight: 600;">API Key Required</h3>
             <p>Please enter and validate your Google AI Studio API key in the sidebar to begin.</p>
         </div>
         """, unsafe_allow_html=True)
 
-        with st.expander("📖 How to get a free API key (takes 2 minutes)", expanded=True):
+        with st.expander("How to get a free API key (takes 2 minutes)", expanded=True):
             st.markdown("""
             ### Quick Setup Guide:
 
@@ -512,7 +537,7 @@ def main():
         return
     
     # Step 1: Upload Book
-    st.markdown('<p class="step-header">📚 Step 1: Upload Book</p>', unsafe_allow_html=True)
+    st.markdown('<p class="step-header">Step 1: Upload Book</p>', unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader(
         "Upload your book (PDF)",
@@ -542,13 +567,13 @@ def main():
             st.metric("Has Text", "✓ Yes" if pdf_info.get('has_text') else "✗ No")
 
         if not pdf_info.get('has_text'):
-            st.markdown('<div class="error-box">⚠️ This PDF doesn\'t appear to have extractable text. It may be a scanned/image-based document.<br><br>💡 <strong>What to do:</strong> Use a PDF with selectable text, or convert your scanned PDF using OCR software.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="error-box"><strong>Unable to Extract Text</strong><br>This PDF doesn\'t appear to have selectable text. It may be a scanned or image-based document.<br><br><strong>Solution:</strong> Use a PDF with selectable text, or convert your scanned PDF using OCR software.</div>', unsafe_allow_html=True)
             return
         
         # Extract text button
-        if st.button("📖 Extract Book Content", type="primary"):
+        if st.button("Extract Book Content", type="primary"):
             progress_placeholder = st.empty()
-            progress_placeholder.markdown('<div class="progress-message">📖 Extracting text from your PDF...</div>', unsafe_allow_html=True)
+            progress_placeholder.markdown('<div class="progress-message">Extracting text from your PDF...</div>', unsafe_allow_html=True)
 
             try:
                 uploaded_file.seek(0)
@@ -568,7 +593,7 @@ def main():
     
     # Step 2: Analyze Book
     if st.session_state.book_content:
-        st.markdown('<p class="step-header">🔍 Step 2: Analyze Book</p>', unsafe_allow_html=True)
+        st.markdown('<p class="step-header">Step 2: Analyze Book</p>', unsafe_allow_html=True)
         
         with st.expander("Preview extracted content", expanded=False):
             st.text_area(
@@ -578,9 +603,9 @@ def main():
                 disabled=True
             )
         
-        if st.button("🔬 Analyze Book & Create Planning Table", type="primary"):
+        if st.button("Analyze Book & Create Planning Table", type="primary"):
             progress_placeholder = st.empty()
-            progress_placeholder.markdown('<div class="progress-message">🔬 Analyzing your book with AI... This may take 30-60 seconds</div>', unsafe_allow_html=True)
+            progress_placeholder.markdown('<div class="progress-message">Analyzing your book with AI — This may take 30-60 seconds</div>', unsafe_allow_html=True)
 
             try:
                 configure_gemini(st.session_state.api_key)
@@ -598,7 +623,7 @@ def main():
     
     # Step 3: Review Planning Table
     if st.session_state.planning_data:
-        st.markdown('<p class="step-header">📋 Step 3: Review Planning Table</p>', unsafe_allow_html=True)
+        st.markdown('<p class="step-header">Step 3: Review Planning Table</p>', unsafe_allow_html=True)
         
         planning_data = st.session_state.planning_data
         
@@ -689,9 +714,9 @@ def main():
             height=100
         )
         
-        if change_request and st.button("🔄 Apply Changes"):
+        if change_request and st.button("Apply Changes", type="primary"):
             progress_placeholder = st.empty()
-            progress_placeholder.markdown('<div class="progress-message">🔄 Applying your changes to the planning table...</div>', unsafe_allow_html=True)
+            progress_placeholder.markdown('<div class="progress-message">Applying your changes to the planning table...</div>', unsafe_allow_html=True)
 
             try:
                 configure_gemini(st.session_state.api_key)
@@ -722,7 +747,7 @@ def main():
     
     # Step 4: Generate Appendices
     if st.session_state.planning_data:
-        st.markdown('<p class="step-header">✨ Step 4: Generate Appendices</p>', unsafe_allow_html=True)
+        st.markdown('<p class="step-header">Step 4: Generate Appendices</p>', unsafe_allow_html=True)
         
         chapters = st.session_state.planning_data.get('chapters', [])
         
@@ -745,9 +770,9 @@ def main():
             st.write(selected_chapter.get('foresight_task', 'N/A'))
         
         # Generate button
-        if st.button("🚀 Generate Appendix", type="primary"):
+        if st.button("Generate Appendix", type="primary"):
             progress_placeholder = st.empty()
-            progress_placeholder.markdown('<div class="progress-message">✨ Generating your appendix with AI... This may take 1-2 minutes</div>', unsafe_allow_html=True)
+            progress_placeholder.markdown('<div class="progress-message">Generating your appendix with AI — This may take 1-2 minutes</div>', unsafe_allow_html=True)
 
             try:
                 configure_gemini(st.session_state.api_key)
@@ -822,7 +847,7 @@ def main():
                     st.warning(f"PDF export error: {str(e)}")
             
             with col4:
-                if st.button("🔄 Regenerate"):
+                if st.button("Regenerate Appendix"):
                     del st.session_state.generated_appendices[selected_target]
                     st.rerun()
         
