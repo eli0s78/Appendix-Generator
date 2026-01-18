@@ -595,6 +595,26 @@ def main():
         if st.session_state.api_key_valid and st.session_state.working_model:
             st.info(f"Working Model: {st.session_state.working_model}")
 
+        st.divider()
+
+        # Quick Help - Always Accessible
+        with st.expander("Quick Help", expanded=False):
+            st.markdown("""
+            **Setup:**
+            - Get your free API key: [Google AI Studio](https://aistudio.google.com/apikey)
+            - Enter and validate the key in the **API Setup** tab
+
+            **Workflow:**
+            1. **Upload Book** - Upload a PDF and extract content
+            2. **Analyze & Review** - Create planning table, review and adjust if needed
+            3. **Generate** - Generate appendices for selected chapters
+
+            **Tips:**
+            - Use Demo Mode to try the workflow without a PDF
+            - All tabs show warnings if prerequisites aren't met
+            - Download options available for planning tables and appendices
+            """, unsafe_allow_html=True)
+
     # Main Tabs - with dynamic status indicators
     # Build tab labels based on completion status
     tab_labels = []
@@ -673,19 +693,6 @@ def main():
             st.success("✓ API Connected")
 
         st.divider()
-
-        # Quick Help
-        with st.expander("Quick Help", expanded=False):
-            st.markdown("""
-            **Setup:**
-            - Get your free API key: [Google AI Studio](https://aistudio.google.com/apikey)
-            - Enter and validate the key above
-
-            **Workflow:**
-            1. Upload a PDF book and extract content
-            2. Analyze book to create planning table (then review and adjust if needed)
-            3. Generate appendices
-            """, unsafe_allow_html=True)
 
         # Expanded Setup Guide
         with st.expander("How to get a free API key (takes 2 minutes)", expanded=not st.session_state.api_key_valid):
