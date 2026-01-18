@@ -83,24 +83,24 @@ st.markdown("""
         padding-bottom: 2rem;
     }
 
-    /* Main Headers - Large, Bold, Prominent */
+    /* Main Headers - HERO SIZE */
     .main-header {
-        font-size: 3.5rem;
-        font-weight: 800;
+        font-size: 4.5rem;
+        font-weight: 900;
         color: #0F172A;
         text-align: center;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
         margin-top: 0;
         padding-top: 0;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        letter-spacing: -0.04em;
-        line-height: 1;
+        letter-spacing: -0.045em;
+        line-height: 0.95;
     }
     .sub-header {
-        font-size: 1.25rem;
+        font-size: 1.35rem;
         color: #475569;
         text-align: center;
-        margin-bottom: 1.75rem;
+        margin-bottom: 2rem;
         margin-top: 0;
         font-weight: 400;
         font-family: 'Inter', sans-serif;
