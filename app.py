@@ -101,27 +101,26 @@ st.markdown("""
         margin-top: 0 !important;
     }
 
-    /* Minimize Streamlit header spacing while keeping menu visible */
-    header[data-testid="stHeader"] {
-        background-color: transparent !important;
-        padding-top: 0.5rem !important;
-        padding-bottom: 0 !important;
+    /* Streamlit Header - Keep visible but minimal */
+    .stAppHeader {
+        background-color: rgba(255, 255, 255, 0.0) !important;
+        visibility: visible !important;
         height: auto !important;
     }
 
-    /* Remove top app container padding */
-    .appview-container {
-        padding-top: 0 !important;
-    }
-
-    /* Force main container to top */
-    section.main > div {
+    /* Main Block Container - Minimal padding */
+    .stMainBlockContainer {
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
         padding-top: 0.5rem !important;
+        padding-bottom: 0rem !important;
     }
 
-    /* Reduce space in main block container */
+    /* Legacy support for older block-container class */
     .main .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
 
     /* Main Headers - Moderate size for better readability */
@@ -285,7 +284,14 @@ st.markdown("""
         background-color: #F8FAFC;
     }
 
-    /* Remove top padding from sidebar - AGGRESSIVE */
+    /* Sidebar Header - Minimal height */
+    [data-testid="stSidebarHeader"] {
+        height: 2rem !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    /* Remove top padding from sidebar */
     [data-testid="stSidebar"] {
         padding-top: 0 !important;
         margin-top: 0 !important;
@@ -294,16 +300,6 @@ st.markdown("""
     [data-testid="stSidebar"] > div {
         padding-top: 0 !important;
         margin-top: 0 !important;
-    }
-
-    [data-testid="stSidebar"] > div:first-child {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    /* Remove spacing from sidebar content container */
-    section[data-testid="stSidebar"] > div > div {
-        padding-top: 0 !important;
     }
 
     /* Button Enhancements - Improved Touch Targets */
