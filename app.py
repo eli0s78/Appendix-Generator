@@ -580,9 +580,10 @@ def main():
             **Workflow:**
             1. Enter your Gemini API key
             2. Upload a PDF book
-            3. Analyze to create planning table
-            4. Review and adjust if needed
-            5. Generate appendices
+            3. Extract book content
+            4. Analyze to create planning table
+            5. Review and adjust if needed
+            6. Generate appendices
 
             **Get API Key:** [Google AI Studio](https://aistudio.google.com/apikey)
             """, unsafe_allow_html=True)
@@ -646,26 +647,40 @@ def main():
             st.markdown('<div class="error-box"><strong>Unable to Extract Text</strong><br>This PDF doesn\'t appear to have selectable text. It may be a scanned or image-based document.<br><br><strong>Solution:</strong> Use a PDF with selectable text, or convert your scanned PDF using OCR software.</div>', unsafe_allow_html=True)
             return
         
-        # Extract text button
-        if st.button("Extract Book Content", type="primary"):
-            progress_placeholder = st.empty()
-            progress_placeholder.markdown('<div class="progress-message">Extracting text from your PDF...</div>', unsafe_allow_html=True)
+        # Extract text button with inline progress/success
+        col_btn, col_status = st.columns([1, 3])
+
+        with col_btn:
+            extract_clicked = st.button("Extract Book Content", type="primary")
+
+        with col_status:
+            status_placeholder = st.empty()
+
+        if extract_clicked:
+            status_placeholder.markdown('<div class="progress-message">Extracting text from your PDF...</div>', unsafe_allow_html=True)
 
             try:
                 uploaded_file.seek(0)
+
+                # Create progress bar
+                progress_bar = status_placeholder.progress(0)
+                for percent in range(0, 100, 20):
+                    progress_bar.progress(percent)
+
                 content, extraction_info = extract_with_info(uploaded_file)
+                progress_bar.progress(100)
+
                 st.session_state.book_content = content
                 st.session_state.extraction_info = extraction_info
 
-                progress_placeholder.empty()
-                st.markdown(f'<div class="success-box success-animation">✓ Successfully extracted {extraction_info["final_chars"]:,} characters from {extraction_info["pages"]} pages</div>', unsafe_allow_html=True)
+                status_placeholder.success(f'✓ Successfully extracted {extraction_info["final_chars"]:,} characters from {extraction_info["pages"]} pages')
 
                 # Show warning if content was truncated
                 if extraction_info.get('was_truncated', False):
                     st.warning(f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted. If chapters are missing, use 'Request Changes' to add them manually.")
 
             except Exception as e:
-                st.error(f"Error extracting text: {str(e)}")
+                status_placeholder.error(f"Error extracting text: {str(e)}")
     
     # Step 2: Analyze Book
     if st.session_state.book_content:
