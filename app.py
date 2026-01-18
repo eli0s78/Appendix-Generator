@@ -578,12 +578,10 @@ def main():
         with st.expander("Quick Help", expanded=False):
             st.markdown("""
             **Workflow:**
-            1. Enter your Gemini API key
-            2. Upload a PDF book
-            3. Extract book content
-            4. Analyze to create planning table
-            5. Review and adjust if needed
-            6. Generate appendices
+            1. Upload a PDF book (and extract content)
+            2. Analyze to create planning table
+            3. Review and adjust if needed
+            4. Generate appendices
 
             **Get API Key:** [Google AI Studio](https://aistudio.google.com/apikey)
             """, unsafe_allow_html=True)
@@ -657,18 +655,23 @@ def main():
             status_placeholder = st.empty()
 
         if extract_clicked:
-            status_placeholder.markdown('<div class="progress-message">Extracting text from your PDF...</div>', unsafe_allow_html=True)
-
             try:
                 uploaded_file.seek(0)
 
-                # Create progress bar
-                progress_bar = status_placeholder.progress(0)
-                for percent in range(0, 100, 20):
-                    progress_bar.progress(percent)
+                # Create progress bar starting from 0
+                progress_bar = status_placeholder.progress(0, text="Extracting text from your PDF...")
+
+                # Simulate smooth progress during extraction
+                import time
+                for percent in range(0, 90, 10):
+                    progress_bar.progress(percent, text="Extracting text from your PDF...")
+                    time.sleep(0.1)
 
                 content, extraction_info = extract_with_info(uploaded_file)
-                progress_bar.progress(100)
+
+                # Complete the progress bar
+                progress_bar.progress(100, text="Extraction complete!")
+                time.sleep(0.3)
 
                 st.session_state.book_content = content
                 st.session_state.extraction_info = extraction_info
