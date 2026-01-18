@@ -77,10 +77,16 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Remove excessive top padding */
+    /* Remove excessive top padding - minimal spacing */
     .main .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem;
+        padding-top: 0.5rem !important;
+        padding-bottom: 1rem !important;
+        max-width: 100% !important;
+    }
+
+    /* Remove default paragraph margins */
+    .main .block-container p {
+        margin-top: 0 !important;
     }
 
     /* Main Headers - HERO SIZE with !important to override Streamlit */
