@@ -577,13 +577,15 @@ def main():
         # Help - Compact version
         with st.expander("Quick Help", expanded=False):
             st.markdown("""
+            **Setup:**
+            - Get your free API key: [Google AI Studio](https://aistudio.google.com/apikey)
+            - Enter and validate the key in the sidebar
+
             **Workflow:**
             1. Upload a PDF book (and extract content)
             2. Analyze to create planning table
             3. Review and adjust if needed
             4. Generate appendices
-
-            **Get API Key:** [Google AI Studio](https://aistudio.google.com/apikey)
             """, unsafe_allow_html=True)
     
     # Main content area
@@ -658,20 +660,10 @@ def main():
             try:
                 uploaded_file.seek(0)
 
-                # Create progress bar starting from 0
-                progress_bar = status_placeholder.progress(0, text="Extracting text from your PDF...")
-
-                # Simulate smooth progress during extraction
-                import time
-                for percent in range(0, 90, 10):
-                    progress_bar.progress(percent, text="Extracting text from your PDF...")
-                    time.sleep(0.1)
+                # Show animated processing message (better than static progress bar)
+                status_placeholder.info("⏳ Extracting text from your PDF...")
 
                 content, extraction_info = extract_with_info(uploaded_file)
-
-                # Complete the progress bar
-                progress_bar.progress(100, text="Extraction complete!")
-                time.sleep(0.3)
 
                 st.session_state.book_content = content
                 st.session_state.extraction_info = extraction_info
