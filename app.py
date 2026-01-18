@@ -104,20 +104,38 @@ st.markdown("""
     /* Remove Streamlit header spacing */
     header {
         padding: 0 !important;
+        margin: 0 !important;
+        height: 0 !important;
     }
 
-    /* Main Headers - HERO SIZE with !important to override Streamlit */
+    /* Hide Streamlit's default header toolbar */
+    header[data-testid="stHeader"] {
+        display: none !important;
+        height: 0 !important;
+    }
+
+    /* Remove top app container padding */
+    .appview-container {
+        padding-top: 0 !important;
+    }
+
+    /* Force main container to top */
+    section.main > div {
+        padding-top: 0 !important;
+    }
+
+    /* Main Headers - Moderate size for better readability */
     .main-header {
-        font-size: 4.5rem !important;
-        font-weight: 900 !important;
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
         color: #0F172A !important;
         text-align: center !important;
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 0.5rem !important;
         margin-top: 0 !important;
         padding-top: 0 !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        letter-spacing: -0.045em !important;
-        line-height: 0.95 !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.2 !important;
     }
     .sub-header {
         font-size: 1.35rem !important;
@@ -265,6 +283,27 @@ st.markdown("""
     /* Sidebar Styling */
     .sidebar .sidebar-content {
         background-color: #F8FAFC;
+    }
+
+    /* Remove top padding from sidebar - AGGRESSIVE */
+    [data-testid="stSidebar"] {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    [data-testid="stSidebar"] > div {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    /* Remove spacing from sidebar content container */
+    section[data-testid="stSidebar"] > div > div {
+        padding-top: 0 !important;
     }
 
     /* Button Enhancements - Improved Touch Targets */
@@ -453,7 +492,7 @@ def load_demo_data():
 
 def main():
     # Header
-    st.markdown('<p class="main-header">Forward Thinking - Foresight</p>', unsafe_allow_html=True)
+    st.markdown('<p class="main-header">Appendix Generator</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Generate Future-Oriented Appendices for Academic Books</p>', unsafe_allow_html=True)
 
     # Demo Mode indicator (if active)
