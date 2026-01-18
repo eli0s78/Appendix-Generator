@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Environment
+.env
+*.env
+
+# Temporary files
+*.tmp
+*.temp
+
+# Large test files
+*.pdf
+!docs/*.pdf
+
+# Generated output
+output/
+exports/
+downloads/
+
+# Logs
+*.log
+logs/
+
+# Database files (if added later)
+*.db
+*.sqlite
+
+# Jupyter notebooks (if used for testing)
+.ipynb_checkpoints/
+
+# Development files
+nul
+*.workspace
