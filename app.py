@@ -209,6 +209,68 @@ st.markdown("""
         color: #94A3B8;
     }
 
+    /* Browser-Style Tabs - Modern Interface */
+    .stTabs {
+        background-color: transparent;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    [data-baseweb="tab-list"] {
+        gap: 4px;
+        background: #F1F5F9;
+        padding: 0.5rem 1rem 0 1rem;
+        border-radius: 12px 12px 0 0;
+        border-bottom: 2px solid #E2E8F0;
+    }
+
+    [data-baseweb="tab"] {
+        background: transparent;
+        border: none;
+        border-radius: 8px 8px 0 0;
+        padding: 0.875rem 1.5rem;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 0.9375rem;
+        color: #64748B;
+        transition: all 200ms ease;
+        margin-bottom: -2px;
+        border-bottom: 2px solid transparent;
+    }
+
+    [data-baseweb="tab"]:hover {
+        background: rgba(255, 255, 255, 0.5);
+        color: #334155;
+    }
+
+    [aria-selected="true"][data-baseweb="tab"] {
+        background: white;
+        color: #0F172A;
+        font-weight: 600;
+        border-bottom: 2px solid #3B82F6;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    [data-baseweb="tab-panel"] {
+        background: white;
+        padding: 2rem;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Tab status indicators */
+    .tab-status-complete {
+        color: #10B981;
+        font-weight: 600;
+        margin-right: 0.25rem;
+    }
+
+    .tab-status-current {
+        color: #3B82F6;
+        font-weight: 600;
+        margin-right: 0.25rem;
+    }
+
     /* Info Boxes - Modern Clean Style */
     .info-box {
         background-color: #F0F9FF;
@@ -507,9 +569,6 @@ def main():
     if st.session_state.demo_mode:
         st.markdown('<div class="info-box"><strong>Demo Mode Active</strong> – Using sample book data. Try the full workflow without uploading a PDF!</div>', unsafe_allow_html=True)
 
-    # Workflow Tracker
-    render_workflow_tracker()
-
     # Simplified Sidebar
     with st.sidebar:
         st.markdown("### Configuration")
@@ -536,13 +595,35 @@ def main():
         if st.session_state.api_key_valid and st.session_state.working_model:
             st.info(f"Working Model: {st.session_state.working_model}")
 
-    # Main Tabs
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "🔑 API Setup",
-        "📤 Upload Book",
-        "🔍 Analyze & Review",
-        "✨ Generate"
-    ])
+    # Main Tabs - with dynamic status indicators
+    # Build tab labels based on completion status
+    tab_labels = []
+
+    # Tab 1: API Setup
+    if st.session_state.api_key_valid:
+        tab_labels.append("✓ API Setup")
+    else:
+        tab_labels.append("⚙ API Setup")
+
+    # Tab 2: Upload Book
+    if st.session_state.book_content:
+        tab_labels.append("✓ 1. Upload Book")
+    else:
+        tab_labels.append("1. Upload Book")
+
+    # Tab 3: Analyze & Review
+    if st.session_state.planning_data:
+        tab_labels.append("✓ 2. Analyze & Review")
+    else:
+        tab_labels.append("2. Analyze & Review")
+
+    # Tab 4: Generate
+    if st.session_state.generated_appendices:
+        tab_labels.append("✓ 3. Generate")
+    else:
+        tab_labels.append("3. Generate")
+
+    tab1, tab2, tab3, tab4 = st.tabs(tab_labels)
 
     # Tab 1: API Setup
     with tab1:
