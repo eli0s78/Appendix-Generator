@@ -598,7 +598,7 @@ def main():
         st.divider()
 
         # Quick Help - Always Accessible
-        with st.expander("Quick Help", expanded=False):
+        with st.expander("Quick Help", expanded=True):
             st.markdown("""
             **Setup:**
             - Get your free API key: [Google AI Studio](https://aistudio.google.com/apikey)
@@ -695,7 +695,7 @@ def main():
         st.divider()
 
         # Expanded Setup Guide
-        with st.expander("How to get a free API key (takes 2 minutes)", expanded=not st.session_state.api_key_valid):
+        with st.expander("How to get a free API key (takes 2 minutes)", expanded=True):
             st.markdown("""
             ### Quick Setup Guide:
 
