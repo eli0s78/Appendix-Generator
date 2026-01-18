@@ -660,10 +660,10 @@ def main():
             try:
                 uploaded_file.seek(0)
 
-                # Show animated processing message (better than static progress bar)
-                status_placeholder.info("⏳ Extracting text from your PDF...")
-
-                content, extraction_info = extract_with_info(uploaded_file)
+                # Show animated spinner with message
+                with status_placeholder:
+                    with st.spinner("Extracting text from your PDF..."):
+                        content, extraction_info = extract_with_info(uploaded_file)
 
                 st.session_state.book_content = content
                 st.session_state.extraction_info = extraction_info
