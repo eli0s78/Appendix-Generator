@@ -83,28 +83,28 @@ st.markdown("""
         padding-bottom: 2rem;
     }
 
-    /* Main Headers - HERO SIZE */
+    /* Main Headers - HERO SIZE with !important to override Streamlit */
     .main-header {
-        font-size: 4.5rem;
-        font-weight: 900;
-        color: #0F172A;
-        text-align: center;
-        margin-bottom: 0.75rem;
-        margin-top: 0;
-        padding-top: 0;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        letter-spacing: -0.045em;
-        line-height: 0.95;
+        font-size: 4.5rem !important;
+        font-weight: 900 !important;
+        color: #0F172A !important;
+        text-align: center !important;
+        margin-bottom: 0.75rem !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        letter-spacing: -0.045em !important;
+        line-height: 0.95 !important;
     }
     .sub-header {
-        font-size: 1.35rem;
-        color: #475569;
-        text-align: center;
-        margin-bottom: 2rem;
-        margin-top: 0;
-        font-weight: 400;
-        font-family: 'Inter', sans-serif;
-        line-height: 1.4;
+        font-size: 1.35rem !important;
+        color: #475569 !important;
+        text-align: center !important;
+        margin-bottom: 2rem !important;
+        margin-top: 0 !important;
+        font-weight: 400 !important;
+        font-family: 'Inter', sans-serif !important;
+        line-height: 1.4 !important;
     }
 
     /* Step Headers - Clean Modern Style */
