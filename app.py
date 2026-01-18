@@ -108,19 +108,26 @@ st.markdown("""
         height: auto !important;
     }
 
-    /* Main Block Container - Minimal padding */
+    /* Main Block Container - Minimal padding with side margins */
     .stMainBlockContainer {
-        padding-left: 0rem !important;
-        padding-right: 0rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
         padding-top: 0.5rem !important;
         padding-bottom: 0rem !important;
+        max-width: 100% !important;
     }
 
     /* Legacy support for older block-container class */
     .main .block-container {
         padding-top: 0.5rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important;
+    }
+
+    /* Ensure content is centered in wide mode */
+    .block-container {
+        max-width: 100% !important;
     }
 
     /* Main Headers - Moderate size for better readability */
@@ -142,9 +149,12 @@ st.markdown("""
         text-align: center !important;
         margin-bottom: 2rem !important;
         margin-top: 0 !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
         font-weight: 400 !important;
         font-family: 'Inter', sans-serif !important;
         line-height: 1.4 !important;
+        width: 100% !important;
     }
 
     /* Step Headers - Clean Modern Style */
