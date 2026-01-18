@@ -45,7 +45,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* Import Modern Typography */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     /* Professional Icon System using Unicode and SVG */
     .icon {
@@ -77,26 +77,34 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Main Headers - Prominent Modern Typography */
+    /* Remove excessive top padding */
+    .main .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem;
+    }
+
+    /* Main Headers - Large, Bold, Prominent */
     .main-header {
-        font-size: 2.75rem;
-        font-weight: 700;
+        font-size: 3.5rem;
+        font-weight: 800;
         color: #0F172A;
         text-align: center;
-        margin-bottom: 0.75rem;
-        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        margin-top: 0;
+        padding-top: 0;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        letter-spacing: -0.03em;
-        line-height: 1.1;
+        letter-spacing: -0.04em;
+        line-height: 1;
     }
     .sub-header {
-        font-size: 1.125rem;
+        font-size: 1.25rem;
         color: #475569;
         text-align: center;
-        margin-bottom: 2.5rem;
+        margin-bottom: 1.75rem;
+        margin-top: 0;
         font-weight: 400;
         font-family: 'Inter', sans-serif;
-        line-height: 1.5;
+        line-height: 1.4;
     }
 
     /* Step Headers - Clean Modern Style */
