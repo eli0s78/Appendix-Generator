@@ -1,9 +1,11 @@
-[theme]
-primaryColor = "#FF6B6B"
-backgroundColor = "#0E1117"
-secondaryBackgroundColor = "#262730"
-textColor = "#FAFAFA"
-font = "sans serif"
+# Theme settings are commented out to allow users to customize via Streamlit Cloud settings
+# Uncomment these lines if you want to force a specific theme
+# [theme]
+# primaryColor = "#FF6B6B"
+# backgroundColor = "#0E1117"
+# secondaryBackgroundColor = "#262730"
+# textColor = "#FAFAFA"
+# font = "sans serif"
 
 [server]
 headless = true
