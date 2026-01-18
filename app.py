@@ -101,17 +101,12 @@ st.markdown("""
         margin-top: 0 !important;
     }
 
-    /* Remove Streamlit header spacing */
-    header {
-        padding: 0 !important;
-        margin: 0 !important;
-        height: 0 !important;
-    }
-
-    /* Hide Streamlit's default header toolbar */
+    /* Minimize Streamlit header spacing while keeping menu visible */
     header[data-testid="stHeader"] {
-        display: none !important;
-        height: 0 !important;
+        background-color: transparent !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0 !important;
+        height: auto !important;
     }
 
     /* Remove top app container padding */
@@ -121,7 +116,12 @@ st.markdown("""
 
     /* Force main container to top */
     section.main > div {
-        padding-top: 0 !important;
+        padding-top: 0.5rem !important;
+    }
+
+    /* Reduce space in main block container */
+    .main .block-container {
+        padding-top: 1rem !important;
     }
 
     /* Main Headers - Moderate size for better readability */
