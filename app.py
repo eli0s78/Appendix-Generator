@@ -584,9 +584,9 @@ def main():
             - Enter and validate the key in the sidebar
 
             **Workflow:**
-            1. Upload a PDF book (and extract content)
-            2. Analyze to create planning table
-            3. Review and adjust if needed
+            1. Upload a PDF book and extract content
+            2. Analyze book to create planning table
+            3. Review planning table and adjust if needed
             4. Generate appendices
             """, unsafe_allow_html=True)
     
@@ -683,7 +683,7 @@ def main():
             except Exception as e:
                 status_placeholder.error(f"Error extracting text: {str(e)}")
     
-    # Step 2: Analyze Book
+    # Step 2: Analyze Book & Review Planning Table
     if st.session_state.book_content:
         st.markdown('<p class="step-header">Step 2: Analyze Book</p>', unsafe_allow_html=True)
 
@@ -709,9 +709,9 @@ def main():
                 with st.expander("Debug info"):
                     st.text(str(e))
     
-    # Step 3: Review Planning Table
+    # Review Planning Table (sub-section of Step 2)
     if st.session_state.planning_data:
-        st.markdown('<p class="step-header">Step 3: Review Planning Table</p>', unsafe_allow_html=True)
+        st.markdown('<p class="step-header">Review Planning Table</p>', unsafe_allow_html=True)
         
         planning_data = st.session_state.planning_data
         
@@ -771,10 +771,11 @@ def main():
                     planning_md = export_planning_table_to_markdown(planning_data)
                     if planning_md and len(planning_md) > 0:
                         st.download_button(
-                            "📥 Planning Table (.md)",
-                            planning_md,
+                            label="📥 Planning Table (.md)",
+                            data=planning_md,
                             file_name="planning_table.md",
-                            mime="text/markdown"
+                            mime="text/markdown",
+                            key="download_md"
                         )
                     else:
                         st.error("Markdown export returned empty file")
@@ -786,10 +787,11 @@ def main():
                     planning_docx = export_planning_table_to_docx(planning_data)
                     if planning_docx and len(planning_docx) > 0:
                         st.download_button(
-                            "📥 Planning Table (.docx)",
-                            planning_docx,
+                            label="📥 Planning Table (.docx)",
+                            data=planning_docx,
                             file_name="planning_table.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key="download_docx"
                         )
                     else:
                         st.error("DOCX export returned empty file")
@@ -801,10 +803,11 @@ def main():
                     planning_pdf = export_planning_table_to_pdf(planning_data)
                     if planning_pdf and len(planning_pdf) > 0:
                         st.download_button(
-                            "📥 Planning Table (.pdf)",
-                            planning_pdf,
+                            label="📥 Planning Table (.pdf)",
+                            data=planning_pdf,
                             file_name="planning_table.pdf",
-                            mime="application/pdf"
+                            mime="application/pdf",
+                            key="download_pdf"
                         )
                     else:
                         st.error("PDF export returned empty file")
@@ -853,9 +856,9 @@ def main():
             except Exception as e:
                 st.error(f"Error applying changes: {str(e)}")
     
-    # Step 4: Generate Appendices
+    # Step 3: Generate Appendices
     if st.session_state.planning_data:
-        st.markdown('<p class="step-header">Step 4: Generate Appendices</p>', unsafe_allow_html=True)
+        st.markdown('<p class="step-header">Step 3: Generate Appendices</p>', unsafe_allow_html=True)
         
         chapters = st.session_state.planning_data.get('chapters', [])
         
