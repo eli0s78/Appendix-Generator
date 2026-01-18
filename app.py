@@ -425,26 +425,28 @@ def render_workflow_tracker():
         current_step = 4
 
     steps = [
-        {"num": 1, "name": "API Setup"},
-        {"num": 2, "name": "Upload Book"},
-        {"num": 3, "name": "Analyze"},
-        {"num": 4, "name": "Generate"}
+        {"num": 0, "name": "API Setup", "icon": "⚙"},
+        {"num": 1, "name": "Upload Book", "icon": None},
+        {"num": 2, "name": "Analyze", "icon": None},
+        {"num": 3, "name": "Generate", "icon": None}
     ]
 
     workflow_html = '<div class="workflow-tracker"><div style="text-align: center;">'
 
     for step in steps:
-        if step["num"] < current_step:
+        if step["num"] < current_step - 1:
             status_class = "step-completed"
             icon = "✓"
-        elif step["num"] == current_step:
+        elif step["num"] == current_step - 1:
             status_class = "step-current"
-            icon = f"{step['num']}"
+            icon = step.get('icon') or f"{step['num']}"
         else:
             status_class = "step-pending"
-            icon = f"{step['num']}"
+            icon = step.get('icon') or f"{step['num']}"
 
-        workflow_html += f'<span class="step-indicator {status_class}">{icon}. {step["name"]}</span>'
+        # Add separator only for numbered steps (num > 0)
+        separator = ". " if step['num'] > 0 else " "
+        workflow_html += f'<span class="step-indicator {status_class}">{icon}{separator}{step["name"]}</span>'
 
     workflow_html += '</div></div>'
     st.markdown(workflow_html, unsafe_allow_html=True)
@@ -651,7 +653,11 @@ def main():
         col_btn, col_status = st.columns([1, 3])
 
         with col_btn:
-            extract_clicked = st.button("Extract Book Content", type="primary")
+            extract_clicked = st.button(
+                "Extract Book Content",
+                type="primary",
+                disabled=st.session_state.book_content is not None
+            )
 
         with col_status:
             status_placeholder = st.empty()
@@ -680,16 +686,12 @@ def main():
     # Step 2: Analyze Book
     if st.session_state.book_content:
         st.markdown('<p class="step-header">Step 2: Analyze Book</p>', unsafe_allow_html=True)
-        
-        with st.expander("Preview extracted content", expanded=False):
-            st.text_area(
-                "Book Content (Preview)",
-                st.session_state.book_content[:5000] + "...",
-                height=200,
-                disabled=True
-            )
-        
-        if st.button("Analyze Book & Create Planning Table", type="primary"):
+
+        if st.button(
+            "Analyze Book & Create Planning Table",
+            type="primary",
+            disabled=st.session_state.planning_data is not None
+        ):
             progress_placeholder = st.empty()
             progress_placeholder.markdown('<div class="progress-message">Analyzing your book with AI — This may take 30-60 seconds</div>', unsafe_allow_html=True)
 
@@ -759,37 +761,57 @@ def main():
         
         # Download planning table
         st.divider()
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            planning_md = export_planning_table_to_markdown(planning_data)
-            st.download_button(
-                "📥 Planning Table (.md)",
-                planning_md,
-                file_name="planning_table.md",
-                mime="text/markdown"
-            )
-        with col2:
-            try:
-                planning_docx = export_planning_table_to_docx(planning_data)
-                st.download_button(
-                    "📥 Planning Table (.docx)",
-                    planning_docx,
-                    file_name="planning_table.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                )
-            except Exception as e:
-                st.warning(f"DOCX error: {str(e)}")
-        with col3:
-            try:
-                planning_pdf = export_planning_table_to_pdf(planning_data)
-                st.download_button(
-                    "📥 Planning Table (.pdf)",
-                    planning_pdf,
-                    file_name="planning_table.pdf",
-                    mime="application/pdf"
-                )
-            except Exception as e:
-                st.warning(f"PDF error: {str(e)}")
+
+        # Validate planning data before offering downloads
+        if planning_data and planning_data.get('chapters'):
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                try:
+                    planning_md = export_planning_table_to_markdown(planning_data)
+                    if planning_md and len(planning_md) > 0:
+                        st.download_button(
+                            "📥 Planning Table (.md)",
+                            planning_md,
+                            file_name="planning_table.md",
+                            mime="text/markdown"
+                        )
+                    else:
+                        st.error("Markdown export returned empty file")
+                except Exception as e:
+                    st.error(f"Markdown export failed: {str(e)}")
+
+            with col2:
+                try:
+                    planning_docx = export_planning_table_to_docx(planning_data)
+                    if planning_docx and len(planning_docx) > 0:
+                        st.download_button(
+                            "📥 Planning Table (.docx)",
+                            planning_docx,
+                            file_name="planning_table.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
+                    else:
+                        st.error("DOCX export returned empty file")
+                except Exception as e:
+                    st.error(f"DOCX export failed: {str(e)}")
+
+            with col3:
+                try:
+                    planning_pdf = export_planning_table_to_pdf(planning_data)
+                    if planning_pdf and len(planning_pdf) > 0:
+                        st.download_button(
+                            "📥 Planning Table (.pdf)",
+                            planning_pdf,
+                            file_name="planning_table.pdf",
+                            mime="application/pdf"
+                        )
+                    else:
+                        st.error("PDF export returned empty file")
+                except Exception as e:
+                    st.error(f"PDF export failed: {str(e)}")
+        else:
+            st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
         
         # Request changes
         st.divider()
