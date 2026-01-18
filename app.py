@@ -585,9 +585,8 @@ def main():
 
             **Workflow:**
             1. Upload a PDF book and extract content
-            2. Analyze book to create planning table
-            3. Review planning table and adjust if needed
-            4. Generate appendices
+            2. Analyze book to create planning table (then review and adjust if needed)
+            3. Generate appendices
             """, unsafe_allow_html=True)
     
     # Main content area
