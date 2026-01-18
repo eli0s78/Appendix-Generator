@@ -77,16 +77,33 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Remove excessive top padding - minimal spacing */
+    /* AGGRESSIVE: Remove ALL top spacing */
+    .main {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+
     .main .block-container {
-        padding-top: 0.5rem !important;
+        padding-top: 0 !important;
         padding-bottom: 1rem !important;
+        margin-top: 0 !important;
         max-width: 100% !important;
+    }
+
+    /* Remove default spacing from first element */
+    .main .block-container > div:first-child {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
     }
 
     /* Remove default paragraph margins */
     .main .block-container p {
         margin-top: 0 !important;
+    }
+
+    /* Remove Streamlit header spacing */
+    header {
+        padding: 0 !important;
     }
 
     /* Main Headers - HERO SIZE with !important to override Streamlit */
