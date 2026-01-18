@@ -510,11 +510,11 @@ def main():
     # Workflow Tracker
     render_workflow_tracker()
 
-    # Sidebar
+    # Simplified Sidebar
     with st.sidebar:
         st.markdown("### Configuration")
 
-        # Demo Mode Toggle (moved to sidebar)
+        # Demo Mode Toggle
         if st.button("Try Demo Mode" if not st.session_state.demo_mode else "Exit Demo Mode",
                      use_container_width=True,
                      type="secondary"):
@@ -532,15 +532,32 @@ def main():
 
         st.divider()
 
-        # Developer Mode Indicator (compact)
+        # Working Model Display
+        if st.session_state.api_key_valid and st.session_state.working_model:
+            st.info(f"Working Model: {st.session_state.working_model}")
+
+    # Main Tabs
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🔑 API Setup",
+        "📤 Upload Book",
+        "🔍 Analyze & Review",
+        "✨ Generate"
+    ])
+
+    # Tab 1: API Setup
+    with tab1:
+        st.markdown('<p class="step-header">API Setup</p>', unsafe_allow_html=True)
+
+        # Developer Mode Indicator
         if DEVELOPER_MODE:
             if st.session_state.api_key_valid:
                 st.success("✓ Developer Mode: API Auto-Loaded")
             else:
                 st.warning("Developer Mode: No API key")
+            st.divider()
 
         # API Key input
-        st.subheader("API Key")
+        st.subheader("API Key Configuration")
 
         # Show API key input field (pre-filled in dev mode, but still editable)
         default_key = st.session_state.get('api_key', '') if DEVELOPER_MODE else ''
@@ -551,9 +568,9 @@ def main():
             help="Get your free API key from https://aistudio.google.com/apikey",
             disabled=DEVELOPER_MODE and st.session_state.api_key_valid
         )
-        
+
         if api_key:
-            if st.button("Validate Key"):
+            if st.button("Validate Key", type="primary"):
                 progress_placeholder = st.empty()
                 progress_placeholder.markdown('<div class="progress-message">Validating your API key...</div>', unsafe_allow_html=True)
 
@@ -576,29 +593,21 @@ def main():
 
         st.divider()
 
-        # Help - Compact version
+        # Quick Help
         with st.expander("Quick Help", expanded=False):
             st.markdown("""
             **Setup:**
             - Get your free API key: [Google AI Studio](https://aistudio.google.com/apikey)
-            - Enter and validate the key in the sidebar
+            - Enter and validate the key above
 
             **Workflow:**
             1. Upload a PDF book and extract content
             2. Analyze book to create planning table (then review and adjust if needed)
             3. Generate appendices
             """, unsafe_allow_html=True)
-    
-    # Main content area
-    if not st.session_state.api_key_valid:
-        st.markdown("""
-        <div class="info-box" style="text-align: center; padding: 2rem;">
-            <h3 style="margin-top: 0; font-weight: 600;">API Key Required</h3>
-            <p>Please enter and validate your Google AI Studio API key in the sidebar to begin.</p>
-        </div>
-        """, unsafe_allow_html=True)
 
-        with st.expander("How to get a free API key (takes 2 minutes)", expanded=True):
+        # Expanded Setup Guide
+        with st.expander("How to get a free API key (takes 2 minutes)", expanded=not st.session_state.api_key_valid):
             st.markdown("""
             ### Quick Setup Guide:
 
@@ -606,85 +615,105 @@ def main():
             2. **Sign in** with your Google account
             3. **Click** "Create API Key" or "Get API Key"
             4. **Copy** the key (starts with "AIza...")
-            5. **Paste** it in the sidebar ← and click "Validate Key"
+            5. **Paste** it above and click "Validate Key"
 
             **Note:** The free tier includes generous limits - perfect for testing and moderate use.
 
-            **Already have a key?** Paste it in the sidebar to get started!
+            **Already have a key?** Paste it above to get started!
             """)
-        return
-    
-    # Step 1: Upload Book
-    st.markdown('<p class="step-header">Step 1: Upload Book</p>', unsafe_allow_html=True)
-    
-    uploaded_file = st.file_uploader(
-        "Upload your book (PDF)",
-        type=['pdf'],
-        help="Upload the PDF book you want to analyze"
-    )
-    
-    if uploaded_file:
-        # Validate PDF file first
-        is_valid, validation_msg = validate_pdf_file(uploaded_file)
 
-        if "⚠️" in validation_msg or "ℹ️" in validation_msg:
-            if "⚠️" in validation_msg:
-                st.warning(validation_msg)
-            else:
-                st.info(validation_msg)
+    # Tab 2: Upload Book
+    with tab2:
+        st.markdown('<p class="step-header">Upload Book</p>', unsafe_allow_html=True)
 
-        # Get PDF info
-        pdf_info = get_pdf_info(uploaded_file)
+        # Prerequisite check
+        if not st.session_state.api_key_valid:
+            st.warning("⚠️ Please configure your API key in the 'API Setup' tab first.")
+            st.stop()
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Pages", pdf_info.get('pages', 'N/A'))
-        with col2:
-            st.metric("Est. Words", f"{int(pdf_info.get('estimated_words', 0)):,}")
-        with col3:
-            st.metric("Has Text", "✓ Yes" if pdf_info.get('has_text') else "✗ No")
+        uploaded_file = st.file_uploader(
+            "Upload your book (PDF)",
+            type=['pdf'],
+            help="Upload the PDF book you want to analyze"
+        )
 
-        if not pdf_info.get('has_text'):
-            st.markdown('<div class="error-box"><strong>Unable to Extract Text</strong><br>This PDF doesn\'t appear to have selectable text. It may be a scanned or image-based document.<br><br><strong>Solution:</strong> Use a PDF with selectable text, or convert your scanned PDF using OCR software.</div>', unsafe_allow_html=True)
-            return
-        
-        # Extract text button with inline progress/success
-        col_btn, col_status = st.columns([1, 3])
+        if uploaded_file:
+            # Validate PDF file first
+            is_valid, validation_msg = validate_pdf_file(uploaded_file)
 
-        with col_btn:
-            extract_clicked = st.button(
-                "Extract Book Content",
-                type="primary",
-                disabled=st.session_state.book_content is not None
-            )
+            if "⚠️" in validation_msg or "ℹ️" in validation_msg:
+                if "⚠️" in validation_msg:
+                    st.warning(validation_msg)
+                else:
+                    st.info(validation_msg)
 
-        with col_status:
-            status_placeholder = st.empty()
+            # Get PDF info
+            pdf_info = get_pdf_info(uploaded_file)
 
-        if extract_clicked:
-            try:
-                uploaded_file.seek(0)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Pages", pdf_info.get('pages', 'N/A'))
+            with col2:
+                st.metric("Est. Words", f"{int(pdf_info.get('estimated_words', 0)):,}")
+            with col3:
+                st.metric("Has Text", "✓ Yes" if pdf_info.get('has_text') else "✗ No")
 
-                # Show animated spinner with message
-                with status_placeholder:
-                    with st.spinner("Extracting text from your PDF..."):
-                        content, extraction_info = extract_with_info(uploaded_file)
+            if not pdf_info.get('has_text'):
+                st.markdown('<div class="error-box"><strong>Unable to Extract Text</strong><br>This PDF doesn\'t appear to have selectable text. It may be a scanned or image-based document.<br><br><strong>Solution:</strong> Use a PDF with selectable text, or convert your scanned PDF using OCR software.</div>', unsafe_allow_html=True)
+                st.stop()
 
-                st.session_state.book_content = content
-                st.session_state.extraction_info = extraction_info
+            # Extract text button with inline progress/success
+            col_btn, col_status = st.columns([1, 3])
 
-                status_placeholder.success(f'✓ Successfully extracted {extraction_info["final_chars"]:,} characters from {extraction_info["pages"]} pages')
+            with col_btn:
+                extract_clicked = st.button(
+                    "Extract Book Content",
+                    type="primary",
+                    disabled=st.session_state.book_content is not None
+                )
 
-                # Show warning if content was truncated
-                if extraction_info.get('was_truncated', False):
-                    st.warning(f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted. If chapters are missing, use 'Request Changes' to add them manually.")
+            with col_status:
+                status_placeholder = st.empty()
 
-            except Exception as e:
-                status_placeholder.error(f"Error extracting text: {str(e)}")
-    
-    # Step 2: Analyze Book & Review Planning Table
-    if st.session_state.book_content:
-        st.markdown('<p class="step-header">Step 2: Analyze Book</p>', unsafe_allow_html=True)
+            if extract_clicked:
+                try:
+                    uploaded_file.seek(0)
+
+                    # Show animated spinner with message
+                    with status_placeholder:
+                        with st.spinner("Extracting text from your PDF..."):
+                            content, extraction_info = extract_with_info(uploaded_file)
+
+                    st.session_state.book_content = content
+                    st.session_state.extraction_info = extraction_info
+
+                    status_placeholder.success(f'✓ Successfully extracted {extraction_info["final_chars"]:,} characters from {extraction_info["pages"]} pages')
+
+                    # Show warning if content was truncated
+                    if extraction_info.get('was_truncated', False):
+                        st.warning(f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted. If chapters are missing, use 'Request Changes' to add them manually.")
+
+                except Exception as e:
+                    status_placeholder.error(f"Error extracting text: {str(e)}")
+
+        # Show extraction info if book content exists
+        if st.session_state.book_content:
+            st.divider()
+            st.success("✓ Book content has been extracted and is ready for analysis.")
+            if st.session_state.extraction_info:
+                st.info(f"Extracted {st.session_state.extraction_info['final_chars']:,} characters from {st.session_state.extraction_info['pages']} pages")
+
+    # Tab 3: Analyze & Review
+    with tab3:
+        st.markdown('<p class="step-header">Analyze & Review</p>', unsafe_allow_html=True)
+
+        # Prerequisite check
+        if not st.session_state.book_content:
+            st.warning("⚠️ Please upload and extract a book in the 'Upload Book' tab first.")
+            st.stop()
+
+        # Step 2a: Analyze Book
+        st.subheader("Analyze Book")
 
         if st.button(
             "Analyze Book & Create Planning Table",
@@ -707,178 +736,184 @@ def main():
                 st.error(f"Error during analysis: {str(e)}")
                 with st.expander("Debug info"):
                     st.text(str(e))
-    
-    # Review Planning Table (sub-section of Step 2)
-    if st.session_state.planning_data:
-        st.markdown('<p class="step-header">Review Planning Table</p>', unsafe_allow_html=True)
-        
-        planning_data = st.session_state.planning_data
-        
-        # Book Overview
-        overview = planning_data.get('book_overview', {})
-        st.subheader("Book Overview")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write(f"**Title:** {overview.get('title', 'N/A')}")
-            st.write(f"**Total Chapters:** {overview.get('total_chapters', 'N/A')}")
-        with col2:
-            st.write(f"**Disciplines:** {', '.join(overview.get('disciplines', []))}")
-            st.write(f"**Languages:** {', '.join(overview.get('languages', []))}")
-        
-        st.write(f"**Scope:** {overview.get('scope', 'N/A')}")
-        
-        st.divider()
-        
-        # Chapters/Groups
-        st.subheader("Chapter Groups & Assignments")
-        
-        chapters = planning_data.get('chapters', [])
-        
-        for i, chapter in enumerate(chapters):
-            with st.expander(f"**{chapter.get('group_id', f'Chapter {i+1}')}** - {', '.join(chapter.get('chapter_titles', [])[:2])}{'...' if len(chapter.get('chapter_titles', [])) > 2 else ''}", expanded=False):
-                
-                st.write(f"**Type:** {chapter.get('group_type', 'N/A')}")
-                st.write(f"**Chapters:** {', '.join(map(str, chapter.get('chapter_numbers', [])))}")
-                st.write(f"**Titles:** {', '.join(chapter.get('chapter_titles', []))}")
-                
-                st.write("**Summary:**")
-                st.info(chapter.get('content_summary', 'N/A'))
-                
-                st.write("**Thematic Quadrants:**")
-                for q in chapter.get('thematic_quadrants', []):
-                    st.write(f"  • {q}")
-                
-                st.write("**Foresight Task:**")
-                st.text_area(
-                    "Assignment Brief",
-                    chapter.get('foresight_task', 'N/A'),
-                    height=150,
-                    key=f"task_{i}",
-                    disabled=True
-                )
-        
-        # Download planning table
-        st.divider()
 
-        # Validate planning data before offering downloads
-        if planning_data and planning_data.get('chapters'):
-            col1, col2, col3 = st.columns(3)
+        # Step 2b: Review Planning Table
+        if st.session_state.planning_data:
+            st.divider()
+            st.subheader("Review Planning Table")
 
+            planning_data = st.session_state.planning_data
+
+            # Book Overview
+            overview = planning_data.get('book_overview', {})
+            st.markdown("#### Book Overview")
+
+            col1, col2 = st.columns(2)
             with col1:
-                try:
-                    planning_md = export_planning_table_to_markdown(planning_data)
-                    if planning_md and len(planning_md) > 0:
-                        st.download_button(
-                            label="📥 Planning Table (.md)",
-                            data=planning_md,
-                            file_name="planning_table.md",
-                            mime="text/markdown",
-                            key="download_md"
-                        )
-                    else:
-                        st.error("Markdown export returned empty file")
-                except Exception as e:
-                    st.error(f"Markdown export failed: {str(e)}")
-
+                st.write(f"**Title:** {overview.get('title', 'N/A')}")
+                st.write(f"**Total Chapters:** {overview.get('total_chapters', 'N/A')}")
             with col2:
+                st.write(f"**Disciplines:** {', '.join(overview.get('disciplines', []))}")
+                st.write(f"**Languages:** {', '.join(overview.get('languages', []))}")
+
+            st.write(f"**Scope:** {overview.get('scope', 'N/A')}")
+
+            st.divider()
+
+            # Chapters/Groups
+            st.markdown("#### Chapter Groups & Assignments")
+
+            chapters = planning_data.get('chapters', [])
+
+            for i, chapter in enumerate(chapters):
+                with st.expander(f"**{chapter.get('group_id', f'Chapter {i+1}')}** - {', '.join(chapter.get('chapter_titles', [])[:2])}{'...' if len(chapter.get('chapter_titles', [])) > 2 else ''}", expanded=False):
+
+                    st.write(f"**Type:** {chapter.get('group_type', 'N/A')}")
+                    st.write(f"**Chapters:** {', '.join(map(str, chapter.get('chapter_numbers', [])))}")
+                    st.write(f"**Titles:** {', '.join(chapter.get('chapter_titles', []))}")
+
+                    st.write("**Summary:**")
+                    st.info(chapter.get('content_summary', 'N/A'))
+
+                    st.write("**Thematic Quadrants:**")
+                    for q in chapter.get('thematic_quadrants', []):
+                        st.write(f"  • {q}")
+
+                    st.write("**Foresight Task:**")
+                    st.text_area(
+                        "Assignment Brief",
+                        chapter.get('foresight_task', 'N/A'),
+                        height=150,
+                        key=f"task_{i}",
+                        disabled=True
+                    )
+
+            # Download planning table
+            st.divider()
+
+            # Validate planning data before offering downloads
+            if planning_data and planning_data.get('chapters'):
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    try:
+                        planning_md = export_planning_table_to_markdown(planning_data)
+                        if planning_md and len(planning_md) > 0:
+                            st.download_button(
+                                label="📥 Planning Table (.md)",
+                                data=planning_md,
+                                file_name="planning_table.md",
+                                mime="text/markdown",
+                                key="download_md"
+                            )
+                        else:
+                            st.error("Markdown export returned empty file")
+                    except Exception as e:
+                        st.error(f"Markdown export failed: {str(e)}")
+
+                with col2:
+                    try:
+                        planning_docx = export_planning_table_to_docx(planning_data)
+                        if planning_docx and len(planning_docx) > 0:
+                            st.download_button(
+                                label="📥 Planning Table (.docx)",
+                                data=planning_docx,
+                                file_name="planning_table.docx",
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                key="download_docx"
+                            )
+                        else:
+                            st.error("DOCX export returned empty file")
+                    except Exception as e:
+                        st.error(f"DOCX export failed: {str(e)}")
+
+                with col3:
+                    try:
+                        planning_pdf = export_planning_table_to_pdf(planning_data)
+                        if planning_pdf and len(planning_pdf) > 0:
+                            st.download_button(
+                                label="📥 Planning Table (.pdf)",
+                                data=planning_pdf,
+                                file_name="planning_table.pdf",
+                                mime="application/pdf",
+                                key="download_pdf"
+                            )
+                        else:
+                            st.error("PDF export returned empty file")
+                    except Exception as e:
+                        st.error(f"PDF export failed: {str(e)}")
+            else:
+                st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
+
+            # Request changes
+            st.divider()
+            st.subheader("Request Changes")
+            change_request = st.text_area(
+                "Describe any changes you'd like to make to the planning table:",
+                placeholder="E.g., 'Combine chapters 4 and 5 into one group' or 'Add climate change as a quadrant for Group A'",
+                height=100
+            )
+
+            if change_request and st.button("Apply Changes", type="primary"):
+                progress_placeholder = st.empty()
+                progress_placeholder.markdown('<div class="progress-message">Applying your changes to the planning table...</div>', unsafe_allow_html=True)
+
                 try:
-                    planning_docx = export_planning_table_to_docx(planning_data)
-                    if planning_docx and len(planning_docx) > 0:
-                        st.download_button(
-                            label="📥 Planning Table (.docx)",
-                            data=planning_docx,
-                            file_name="planning_table.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            key="download_docx"
-                        )
-                    else:
-                        st.error("DOCX export returned empty file")
+                    configure_gemini(st.session_state.api_key)
+
+                    change_prompt = f"""
+                    Here is the current planning table:
+
+                    {json.dumps(planning_data, indent=2)}
+
+                    The user requests the following changes:
+
+                    {change_request}
+
+                    Please return the UPDATED planning table as a JSON object with the same structure.
+                    Apply the requested changes while maintaining the overall format.
+                    Return ONLY the JSON object.
+                    """
+
+                    response = call_gemini(change_prompt, st.session_state.working_model)
+                    updated_data = parse_json_response(response)
+                    st.session_state.planning_data = updated_data
+
+                    progress_placeholder.empty()
+                    st.markdown('<div class="success-box success-animation">✓ Changes applied successfully! Please review the updated table below.</div>', unsafe_allow_html=True)
+                    st.rerun()
                 except Exception as e:
-                    st.error(f"DOCX export failed: {str(e)}")
+                    st.error(f"Error applying changes: {str(e)}")
 
-            with col3:
-                try:
-                    planning_pdf = export_planning_table_to_pdf(planning_data)
-                    if planning_pdf and len(planning_pdf) > 0:
-                        st.download_button(
-                            label="📥 Planning Table (.pdf)",
-                            data=planning_pdf,
-                            file_name="planning_table.pdf",
-                            mime="application/pdf",
-                            key="download_pdf"
-                        )
-                    else:
-                        st.error("PDF export returned empty file")
-                except Exception as e:
-                    st.error(f"PDF export failed: {str(e)}")
-        else:
-            st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
-        
-        # Request changes
-        st.divider()
-        st.subheader("Request Changes")
-        change_request = st.text_area(
-            "Describe any changes you'd like to make to the planning table:",
-            placeholder="E.g., 'Combine chapters 4 and 5 into one group' or 'Add climate change as a quadrant for Group A'",
-            height=100
-        )
-        
-        if change_request and st.button("Apply Changes", type="primary"):
-            progress_placeholder = st.empty()
-            progress_placeholder.markdown('<div class="progress-message">Applying your changes to the planning table...</div>', unsafe_allow_html=True)
+    # Tab 4: Generate
+    with tab4:
+        st.markdown('<p class="step-header">Generate Appendices</p>', unsafe_allow_html=True)
 
-            try:
-                configure_gemini(st.session_state.api_key)
+        # Prerequisite check
+        if not st.session_state.planning_data:
+            st.warning("⚠️ Please analyze your book and create a planning table in the 'Analyze & Review' tab first.")
+            st.stop()
 
-                change_prompt = f"""
-                Here is the current planning table:
-
-                {json.dumps(planning_data, indent=2)}
-
-                The user requests the following changes:
-
-                {change_request}
-
-                Please return the UPDATED planning table as a JSON object with the same structure.
-                Apply the requested changes while maintaining the overall format.
-                Return ONLY the JSON object.
-                """
-
-                response = call_gemini(change_prompt, st.session_state.working_model)
-                updated_data = parse_json_response(response)
-                st.session_state.planning_data = updated_data
-
-                progress_placeholder.empty()
-                st.markdown('<div class="success-box success-animation">✓ Changes applied successfully! Please review the updated table below.</div>', unsafe_allow_html=True)
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error applying changes: {str(e)}")
-    
-    # Step 3: Generate Appendices
-    if st.session_state.planning_data:
-        st.markdown('<p class="step-header">Step 3: Generate Appendices</p>', unsafe_allow_html=True)
-        
         chapters = st.session_state.planning_data.get('chapters', [])
-        
+
         # Dropdown to select which appendix to generate
         chapter_options = {
-            f"{ch.get('group_id', f'Item {i}')} - {', '.join(ch.get('chapter_titles', [])[:2])}": i 
+            f"{ch.get('group_id', f'Item {i}')} - {', '.join(ch.get('chapter_titles', [])[:2])}": i
             for i, ch in enumerate(chapters)
         }
-        
+
         selected = st.selectbox(
             "Select chapter/group to generate appendix for:",
             options=list(chapter_options.keys())
         )
-        
+
         selected_idx = chapter_options[selected]
         selected_chapter = chapters[selected_idx]
-        
+
         # Show current assignment
         with st.expander("View assignment brief", expanded=False):
             st.write(selected_chapter.get('foresight_task', 'N/A'))
-        
+
         # Generate button
         if st.button("Generate Appendix", type="primary"):
             progress_placeholder = st.empty()
@@ -907,22 +942,22 @@ def main():
 
             except Exception as e:
                 st.error(f"Error generating appendix: {str(e)}")
-        
+
         # Display generated appendix
         selected_target = selected_chapter.get('group_id', 'Unknown')
         if selected_target in st.session_state.generated_appendices:
             st.divider()
             st.subheader(f"Generated Appendix: {selected_target}")
-            
+
             appendix_content = st.session_state.generated_appendices[selected_target]
-            
+
             # Preview
             st.markdown(appendix_content)
-            
+
             # Download buttons
             st.divider()
             col1, col2, col3, col4 = st.columns(4)
-            
+
             with col1:
                 md_bytes = export_to_markdown(appendix_content, f"Appendix - {selected_target}")
                 st.download_button(
@@ -931,7 +966,7 @@ def main():
                     file_name=f"appendix_{selected_target.replace(' ', '_')}.md",
                     mime="text/markdown"
                 )
-            
+
             with col2:
                 try:
                     docx_bytes = export_to_docx(appendix_content, f"Appendix - {selected_target}")
@@ -943,7 +978,7 @@ def main():
                     )
                 except Exception as e:
                     st.warning(f"DOCX export error: {str(e)}")
-            
+
             with col3:
                 try:
                     pdf_bytes = export_to_pdf(appendix_content, f"Appendix - {selected_target}")
@@ -955,17 +990,17 @@ def main():
                     )
                 except Exception as e:
                     st.warning(f"PDF export error: {str(e)}")
-            
+
             with col4:
                 if st.button("Regenerate Appendix"):
                     del st.session_state.generated_appendices[selected_target]
                     st.rerun()
-        
+
         # Show all generated appendices
         if st.session_state.generated_appendices:
             st.divider()
             st.subheader("📁 All Generated Appendices")
-            
+
             for target, content in st.session_state.generated_appendices.items():
                 col1, col2 = st.columns([3, 1])
                 with col1:
