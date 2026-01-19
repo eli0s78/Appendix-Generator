@@ -491,6 +491,8 @@ if 'planning_data' not in st.session_state:
     st.session_state.planning_data = None
 if 'generated_appendices' not in st.session_state:
     st.session_state.generated_appendices = {}
+if 'ready_to_generate' not in st.session_state:
+    st.session_state.ready_to_generate = False
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
 if 'working_model' not in st.session_state:
@@ -513,7 +515,7 @@ def render_wizard_steps():
     steps = [
         ("API Setup", st.session_state.api_key_valid),
         ("Upload Book", st.session_state.book_content is not None),
-        ("Analyze & Review", st.session_state.planning_data is not None),
+        ("Analyze & Review", st.session_state.ready_to_generate),  # Complete when user clicks "Proceed"
         ("Generate", bool(st.session_state.generated_appendices))
     ]
 
@@ -523,7 +525,7 @@ def render_wizard_steps():
         current = 2
     if st.session_state.book_content:
         current = 3
-    if st.session_state.planning_data:
+    if st.session_state.ready_to_generate:  # Only advance when user explicitly proceeds
         current = 4
 
     # Build HTML for steps
@@ -900,44 +902,52 @@ def main():
             else:
                 st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
 
-            # Request changes (collapsible)
-            with st.expander("Request Changes to Planning Table", expanded=False):
-                change_request = st.text_area(
-                    "Describe any changes you'd like to make:",
-                    placeholder="E.g., 'Combine chapters 4 and 5' or 'Add climate change as a quadrant'",
-                    height=80
-                )
+            # Request changes (expanded by default for review)
+            st.subheader("Request Changes")
+            change_request = st.text_area(
+                "Describe any changes you'd like to make to the planning table:",
+                placeholder="E.g., 'Combine chapters 4 and 5' or 'Add climate change as a quadrant' or 'Remove chapter 3 from the analysis'",
+                height=100
+            )
 
-                if change_request and st.button("Apply Changes", type="primary"):
-                    progress_placeholder = st.empty()
-                    progress_placeholder.markdown('<div class="progress-message">Applying changes...</div>', unsafe_allow_html=True)
+            if change_request and st.button("Apply Changes", type="secondary"):
+                progress_placeholder = st.empty()
+                progress_placeholder.markdown('<div class="progress-message">Applying changes...</div>', unsafe_allow_html=True)
 
-                    try:
-                        configure_gemini(st.session_state.api_key)
+                try:
+                    configure_gemini(st.session_state.api_key)
 
-                        change_prompt = f"""
-                        Here is the current planning table:
+                    change_prompt = f"""
+                    Here is the current planning table:
 
-                        {json.dumps(planning_data, indent=2)}
+                    {json.dumps(planning_data, indent=2)}
 
-                        The user requests the following changes:
+                    The user requests the following changes:
 
-                        {change_request}
+                    {change_request}
 
-                        Please return the UPDATED planning table as a JSON object with the same structure.
-                        Apply the requested changes while maintaining the overall format.
-                        Return ONLY the JSON object.
-                        """
+                    Please return the UPDATED planning table as a JSON object with the same structure.
+                    Apply the requested changes while maintaining the overall format.
+                    Return ONLY the JSON object.
+                    """
 
-                        response = call_gemini(change_prompt, st.session_state.working_model)
-                        updated_data = parse_json_response(response)
-                        st.session_state.planning_data = updated_data
+                    response = call_gemini(change_prompt, st.session_state.working_model)
+                    updated_data = parse_json_response(response)
+                    st.session_state.planning_data = updated_data
 
-                        progress_placeholder.empty()
-                        st.success("✓ Changes applied!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error applying changes: {str(e)}")
+                    progress_placeholder.empty()
+                    st.success("✓ Changes applied!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error applying changes: {str(e)}")
+
+            # Proceed to Generate button
+            st.divider()
+            st.markdown("**Ready to generate appendices?** Review the planning table above and request any changes before proceeding.")
+
+            if st.button("Proceed to Generate Appendices →", type="primary"):
+                st.session_state.ready_to_generate = True
+                st.rerun()
 
     # Step 4: Generate
     elif current_step == 4:
