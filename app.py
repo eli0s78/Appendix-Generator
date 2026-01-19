@@ -723,11 +723,12 @@ def main():
                     st.session_state.book_content = content
                     st.session_state.extraction_info = extraction_info
 
-                    status_placeholder.markdown(f'<div class="success-box" style="margin: 0; padding: 0.5rem 1rem;">✓ Extracted {extraction_info["final_chars"]:,} chars from {extraction_info["pages"]} pages. Go to <strong>Analyze & Review</strong></div>', unsafe_allow_html=True)
-
-                    # Show warning if content was truncated
+                    # Store truncation warning to show on Step 3 if needed
                     if extraction_info.get('was_truncated', False):
-                        st.warning(f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted. If chapters are missing, use 'Request Changes' to add them manually.")
+                        st.session_state.truncation_warning = f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted. If chapters are missing, use 'Request Changes' to add them manually."
+
+                    # Auto-advance to Step 3
+                    st.rerun()
 
                 except Exception as e:
                     status_placeholder.error(f"Error extracting text: {str(e)}")
@@ -736,7 +737,13 @@ def main():
     elif current_step == 3:
         st.markdown('<p class="step-header">Analyze & Review</p>', unsafe_allow_html=True)
 
-        # Step 2a: Analyze Book - horizontal layout
+        # Show truncation warning from Step 2 if applicable
+        if st.session_state.get('truncation_warning'):
+            st.warning(st.session_state.truncation_warning)
+            # Clear after showing once
+            del st.session_state.truncation_warning
+
+        # Step 3a: Analyze Book - horizontal layout
         st.subheader("Analyze Book")
 
         col_btn, col_status = st.columns([1, 3])
