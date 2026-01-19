@@ -374,6 +374,20 @@ st.markdown("""
         margin-top: 0 !important;
     }
 
+    /* Text Area Styling - Better Contrast */
+    .stTextArea textarea {
+        color: #1E293B !important;
+        font-family: 'Inter', monospace !important;
+        font-size: 0.9rem !important;
+        line-height: 1.6 !important;
+    }
+
+    .stTextArea textarea:disabled {
+        color: #334155 !important;
+        opacity: 1 !important;
+        background-color: #F8FAFC !important;
+    }
+
     /* Button Enhancements - Improved Touch Targets */
     .stButton>button {
         border-radius: 8px;
@@ -888,10 +902,18 @@ def main():
                     with col_right:
                         st.write("**Foresight Task:**")
                         st.markdown("*Assignment Brief*")
+
+                        # Calculate dynamic height based on content
+                        foresight_text = chapter.get('foresight_task', 'N/A')
+                        # Estimate lines: count newlines + estimate line wrapping (assume ~80 chars per line)
+                        line_count = foresight_text.count('\n') + (len(foresight_text) // 80) + 1
+                        # Set height: ~25px per line, min 150px, max 800px
+                        dynamic_height = max(150, min(800, line_count * 25))
+
                         st.text_area(
                             "Assignment Brief",
-                            chapter.get('foresight_task', 'N/A'),
-                            height=400,
+                            foresight_text,
+                            height=dynamic_height,
                             key=f"task_{i}",
                             disabled=True,
                             label_visibility="collapsed"
