@@ -692,11 +692,10 @@ def main():
         if st.session_state.api_key_valid:
             st.success("✓ API Connected")
 
-            # Next Step button after API is connected
-            st.markdown("###")  # Add spacing
-            st.info("💡 **Ready to proceed!** Click below to upload your book.")
-            if st.button("📤 Next Step: Upload Book", type="primary", use_container_width=True, key="next_to_upload"):
-                st.info("👉 Please switch to the **Upload Book** tab above.")
+            # Next Step guidance
+            st.divider()
+            st.success("🎉 **Setup Complete!** You're ready to upload your book.")
+            st.info("👉 **Next Step:** Switch to the **Upload Book** tab above to continue.")
 
         st.divider()
 
@@ -797,11 +796,10 @@ def main():
             if st.session_state.extraction_info:
                 st.info(f"Extracted {st.session_state.extraction_info['final_chars']:,} characters from {st.session_state.extraction_info['pages']} pages")
 
-            # Next Step button
-            st.markdown("###")  # Add spacing
-            st.info("💡 **Ready to proceed!** Click below to analyze your book.")
-            if st.button("📊 Next Step: Analyze & Review", type="primary", use_container_width=True, key="next_to_analyze"):
-                st.info("👉 Please switch to the **Analyze & Review** tab above.")
+            # Next Step guidance
+            st.divider()
+            st.success("🎉 **Extraction Complete!** Your book is ready for analysis.")
+            st.info("👉 **Next Step:** Switch to the **Analyze & Review** tab above to continue.")
 
     # Tab 3: Analyze & Review
     with tab3:
@@ -945,11 +943,10 @@ def main():
             else:
                 st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
 
-            # Next Step button
+            # Next Step guidance
             st.divider()
-            st.info("💡 **Planning table complete!** Ready to generate appendices.")
-            if st.button("✨ Next Step: Generate Appendices", type="primary", use_container_width=True, key="next_to_generate"):
-                st.info("👉 Please switch to the **Generate** tab above.")
+            st.success("🎉 **Analysis Complete!** Your planning table is ready.")
+            st.info("👉 **Next Step:** Switch to the **Generate** tab above to create appendices.")
 
             # Request changes
             st.divider()
