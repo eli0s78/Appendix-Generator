@@ -8,6 +8,7 @@ Uses Google Gemini for AI analysis and generation.
 import streamlit as st
 import json
 import os
+import re
 from dotenv import load_dotenv
 from prompts import get_analysis_prompt, get_generation_prompt
 from utils import (
@@ -1095,22 +1096,30 @@ def main():
             col1, col2, col3, col4 = st.columns(4)
 
             with col1:
-                md_bytes = export_to_markdown(appendix_content, f"Appendix - {selected_target}")
-                st.download_button(
-                    "📥 Download .md",
-                    md_bytes,
-                    file_name=f"appendix_{selected_target.replace(' ', '_')}.md",
-                    mime="text/markdown"
-                )
+                try:
+                    md_bytes = export_to_markdown(appendix_content, f"Appendix - {selected_target}")
+                    # Clean filename: remove special chars, keep alphanumeric and underscores
+                    clean_filename = re.sub(r'[^\w\-]', '_', selected_target)
+                    st.download_button(
+                        "📥 Download .md",
+                        md_bytes,
+                        file_name=f"appendix_{clean_filename}.md",
+                        mime="text/markdown",
+                        key=f"dl_md_{selected_target}"
+                    )
+                except Exception as e:
+                    st.warning(f"MD export error: {str(e)}")
 
             with col2:
                 try:
                     docx_bytes = export_to_docx(appendix_content, f"Appendix - {selected_target}")
+                    clean_filename = re.sub(r'[^\w\-]', '_', selected_target)
                     st.download_button(
                         "📥 Download .docx",
                         docx_bytes,
-                        file_name=f"appendix_{selected_target.replace(' ', '_')}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        file_name=f"appendix_{clean_filename}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        key=f"dl_docx_{selected_target}"
                     )
                 except Exception as e:
                     st.warning(f"DOCX export error: {str(e)}")
@@ -1118,11 +1127,13 @@ def main():
             with col3:
                 try:
                     pdf_bytes = export_to_pdf(appendix_content, f"Appendix - {selected_target}")
+                    clean_filename = re.sub(r'[^\w\-]', '_', selected_target)
                     st.download_button(
                         "📥 Download .pdf",
                         pdf_bytes,
-                        file_name=f"appendix_{selected_target.replace(' ', '_')}.pdf",
-                        mime="application/pdf"
+                        file_name=f"appendix_{clean_filename}.pdf",
+                        mime="application/pdf",
+                        key=f"dl_pdf_{selected_target}"
                     )
                 except Exception as e:
                     st.warning(f"PDF export error: {str(e)}")
