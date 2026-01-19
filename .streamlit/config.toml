@@ -12,8 +12,6 @@ headless = true
 enableCORS = false
 enableXsrfProtection = true
 maxUploadSize = 200
-sslCertFile = ".streamlit/certs/cert.pem"
-sslKeyFile = ".streamlit/certs/key.pem"
 
 [browser]
 gatherUsageStats = false
