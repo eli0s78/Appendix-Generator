@@ -864,27 +864,38 @@ def main():
             chapters = planning_data.get('chapters', [])
 
             for i, chapter in enumerate(chapters):
-                with st.expander(f"**{chapter.get('group_id', f'Chapter {i+1}')}** - {', '.join(chapter.get('chapter_titles', [])[:2])}{'...' if len(chapter.get('chapter_titles', [])) > 2 else ''}", expanded=False):
+                # Full-width expander header with group_id and full description
+                expander_label = f"{chapter.get('group_id', f'Chapter {i+1}')} - {chapter.get('content_summary', 'N/A')[:100]}{'...' if len(chapter.get('content_summary', '')) > 100 else ''}"
 
-                    st.write(f"**Type:** {chapter.get('group_type', 'N/A')}")
-                    st.write(f"**Chapters:** {', '.join(map(str, chapter.get('chapter_numbers', [])))}")
-                    st.write(f"**Titles:** {', '.join(chapter.get('chapter_titles', []))}")
+                with st.expander(expander_label, expanded=False):
+                    # Two-column layout
+                    col_left, col_right = st.columns([1, 1])
 
-                    st.write("**Summary:**")
-                    st.info(chapter.get('content_summary', 'N/A'))
+                    # Left Column: Type, Chapters, Titles, Summary, Thematic Quadrants
+                    with col_left:
+                        st.write(f"**Type:** {chapter.get('group_type', 'N/A')}")
+                        st.write(f"**Chapters:** {', '.join(map(str, chapter.get('chapter_numbers', [])))}")
+                        st.write(f"**Titles:** {', '.join(chapter.get('chapter_titles', []))}")
 
-                    st.write("**Thematic Quadrants:**")
-                    for q in chapter.get('thematic_quadrants', []):
-                        st.write(f"  • {q}")
+                        st.write("**Summary:**")
+                        st.info(chapter.get('content_summary', 'N/A'))
 
-                    st.write("**Foresight Task:**")
-                    st.text_area(
-                        "Assignment Brief",
-                        chapter.get('foresight_task', 'N/A'),
-                        height=150,
-                        key=f"task_{i}",
-                        disabled=True
-                    )
+                        st.write("**Thematic Quadrants:**")
+                        for q in chapter.get('thematic_quadrants', []):
+                            st.write(f"  • {q}")
+
+                    # Right Column: Foresight Task & Assignment Brief
+                    with col_right:
+                        st.write("**Foresight Task:**")
+                        st.markdown("*Assignment Brief*")
+                        st.text_area(
+                            "Assignment Brief",
+                            chapter.get('foresight_task', 'N/A'),
+                            height=400,
+                            key=f"task_{i}",
+                            disabled=True,
+                            label_visibility="collapsed"
+                        )
 
             # Download planning table
             st.divider()
