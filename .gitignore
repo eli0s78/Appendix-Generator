@@ -20,6 +20,7 @@ Thumbs.db
 
 # Streamlit
 .streamlit/secrets.toml
+.streamlit/certs/
 
 # Environment
 .env
