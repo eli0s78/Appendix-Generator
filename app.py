@@ -692,6 +692,12 @@ def main():
         if st.session_state.api_key_valid:
             st.success("✓ API Connected")
 
+            # Next Step button after API is connected
+            st.markdown("###")  # Add spacing
+            st.info("💡 **Ready to proceed!** Click below to upload your book.")
+            if st.button("📤 Next Step: Upload Book", type="primary", use_container_width=True, key="next_to_upload"):
+                st.info("👉 Please switch to the **Upload Book** tab above.")
+
         st.divider()
 
         # Expanded Setup Guide
@@ -790,6 +796,12 @@ def main():
             st.success("✓ Book content has been extracted and is ready for analysis.")
             if st.session_state.extraction_info:
                 st.info(f"Extracted {st.session_state.extraction_info['final_chars']:,} characters from {st.session_state.extraction_info['pages']} pages")
+
+            # Next Step button
+            st.markdown("###")  # Add spacing
+            st.info("💡 **Ready to proceed!** Click below to analyze your book.")
+            if st.button("📊 Next Step: Analyze & Review", type="primary", use_container_width=True, key="next_to_analyze"):
+                st.info("👉 Please switch to the **Analyze & Review** tab above.")
 
     # Tab 3: Analyze & Review
     with tab3:
@@ -932,6 +944,12 @@ def main():
                         st.error(f"PDF export failed: {str(e)}")
             else:
                 st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
+
+            # Next Step button
+            st.divider()
+            st.info("💡 **Planning table complete!** Ready to generate appendices.")
+            if st.button("✨ Next Step: Generate Appendices", type="primary", use_container_width=True, key="next_to_generate"):
+                st.info("👉 Please switch to the **Generate** tab above.")
 
             # Request changes
             st.divider()
