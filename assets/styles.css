@@ -1,0 +1,1170 @@
+/* Import Modern Typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* Professional Icon System using SVG Data URIs */
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25em;
+    height: 1.25em;
+    margin-right: 0.5em;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.icon-check {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310B981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.icon-circle {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3C/svg%3E");
+}
+
+.icon-key {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.icon-book {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'%3E%3C/path%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.icon-search {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233B5998' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+}
+
+.icon-sparkles {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F59E0B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+.icon-info {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230EA5E9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E");
+}
+
+.icon-warning {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F59E0B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'%3E%3C/path%3E%3Cline x1='12' y1='9' x2='12' y2='13'%3E%3C/line%3Cline x1='12' y1='17' x2='12.01' y2='17'%3E%3C/line%3C/svg%3E");
+}
+
+.icon-error {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23EF4444' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3C/svg%3E");
+}
+
+.icon-download {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231E293B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'%3E%3C/path%3E%3Cpolyline points='7 10 12 15 17 10'%3E%3C/polyline%3E%3Cline x1='12' y1='15' x2='12' y2='3'%3E%3C/line%3C/svg%3E");
+}
+
+/* Clear pseudo-elements since we are using background images */
+.icon-check::before,
+.icon-circle::before,
+.icon-key::before,
+.icon-book::before,
+.icon-search::before,
+.icon-sparkles::before,
+.icon-info::before,
+.icon-warning::before,
+.icon-error::before,
+.icon-download::before {
+    content: "" !important;
+}
+
+/* Global Styles */
+* {
+    cursor: default;
+}
+
+button,
+a,
+[role="button"] {
+    cursor: pointer !important;
+}
+
+/* AGGRESSIVE: Remove ALL top spacing */
+.main {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.main .block-container {
+    padding-top: 0 !important;
+    padding-bottom: 1rem !important;
+    margin-top: 0 !important;
+    max-width: 100% !important;
+}
+
+/* Remove default spacing from first element */
+.main .block-container>div:first-child {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Remove default paragraph margins */
+.main .block-container p {
+    margin-top: 0 !important;
+}
+
+/* Streamlit Header - Keep visible but don't let it affect layout */
+.stAppHeader {
+    background-color: rgba(255, 255, 255, 0.0) !important;
+    visibility: visible !important;
+    height: auto !important;
+}
+
+/* Main Block Container - Reduced padding for better space utilization */
+.stMainBlockContainer {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0rem !important;
+    max-width: 100% !important;
+}
+
+/* Legacy support for older block-container class */
+.main .block-container {
+    padding-top: 0.25rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    max-width: 100% !important;
+}
+
+/* Ensure content is centered in wide mode */
+.block-container {
+    max-width: 100% !important;
+}
+
+/* Fix asymmetric content - force stMainBlockContainer to have no extra margins */
+[data-testid="stMainBlockContainer"],
+[data-testid="stMain"]>div {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Remove any scrollbar width compensation */
+html {
+    overflow-y: scroll;
+}
+
+/* Fix collapsed sidebar taking space - the >> button area */
+[data-testid="stSidebar"][aria-expanded="false"] {
+    margin-left: 0 !important;
+    min-width: 0 !important;
+    width: 0 !important;
+}
+
+/* When sidebar is collapsed, main should start from left edge */
+[data-testid="stSidebar"][aria-expanded="false"]~[data-testid="stMain"] {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* The expand button container when sidebar is collapsed */
+[data-testid="stSidebarCollapsedControl"] {
+    position: fixed !important;
+    left: 0 !important;
+    z-index: 1000 !important;
+}
+
+/* Force all Streamlit element containers to be full width for centering */
+[data-testid="stMain"] [data-testid="stVerticalBlock"]>[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stMain"] [data-testid="stVerticalBlock"]>div {
+    width: 100% !important;
+}
+
+/* Force stMarkdown containers to be full width */
+[data-testid="stMarkdown"] {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Force the div inside stMarkdown (where our custom HTML lives) to be full width */
+[data-testid="stMarkdown"]>div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Target the element container wrapper that holds stMarkdown */
+[data-testid="stElementContainer"] {
+    width: 100% !important;
+}
+
+/* Also target stMarkdownContainer if it exists */
+[data-testid="stMarkdownContainer"] {
+    width: 100% !important;
+}
+
+.main-header {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    text-align: center !important;
+    margin-bottom: 0.25rem !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.2 !important;
+    width: 100% !important;
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.sub-header {
+    font-size: 1.1rem !important;
+    color: #475569 !important;
+    text-align: center !important;
+    margin-bottom: 0.75rem !important;
+    margin-top: 0 !important;
+    font-weight: 400 !important;
+    font-family: 'Inter', sans-serif !important;
+    line-height: 1.4 !important;
+    width: 100% !important;
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* App header container - wraps title, subtitle, wizard for consistent centering */
+.app-header-container {
+    width: 100% !important;
+    text-align: center !important;
+    display: block !important;
+}
+
+/* Force all children of app-header-container to be full width */
+.app-header-container>* {
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+}
+
+/* Make title and subtitle fill their parent container width */
+.app-header-container .main-header,
+.app-header-container .sub-header {
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+}
+
+/* Wizard container should also be full width */
+.app-header-container .wizard-container {
+    width: 100% !important;
+    display: flex !important;
+    box-sizing: border-box !important;
+}
+
+/* Step Headers - Clean Modern Style */
+.step-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1E293B;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Compact spacing for Step 4 download buttons and content */
+[data-testid="stDownloadButton"] {
+    margin-bottom: 0 !important;
+}
+
+/* Reduce vertical spacing between elements in columns */
+[data-testid="stHorizontalBlock"] {
+    gap: 0.5rem !important;
+}
+
+/* Wizard Step Indicator */
+.wizard-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0 0.5rem;
+    margin-bottom: 0;
+}
+
+.wizard-steps {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+}
+
+.wizard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.step-circle.completed {
+    background: #3B5998;
+    color: white;
+}
+
+.step-circle.current {
+    background: white;
+    border: 3px solid #3B5998;
+    color: #3B5998;
+}
+
+.step-circle.upcoming {
+    background: white;
+    border: 2px solid #E2E8F0;
+    color: #94A3B8;
+}
+
+.step-connector {
+    width: 100px;
+    height: 2px;
+    background: #E2E8F0;
+    margin: 0 0.5rem;
+    margin-top: 24px;
+    /* Center vertically with circles */
+}
+
+.step-connector.completed {
+    background: #3B5998;
+}
+
+.step-label {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    color: #64748B;
+    white-space: nowrap;
+}
+
+.step-label.active {
+    color: #1E293B;
+    font-weight: 600;
+}
+
+/* Step Underline Indicator - highlights current step */
+.step-underline {
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #3B5998, #5B7EC2);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.step-underline.active {
+    opacity: 1;
+}
+
+/* Remove any white box styling from markdown containers */
+[data-testid="stMarkdown"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Info Boxes - Modern Clean Style */
+.info-box {
+    background-color: #F0F9FF;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 3px solid #0EA5E9;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #0C4A6E;
+}
+
+.success-box {
+    background-color: #F0FDF4;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 3px solid #10B981;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #065F46;
+}
+
+.warning-box {
+    background-color: #FFFBEB;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 3px solid #F59E0B;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #92400E;
+}
+
+.error-box {
+    background-color: #FEF2F2;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 3px solid #EF4444;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #991B1B;
+}
+
+/* Cards and Containers */
+.metric-card {
+    background: #FFFFFF;
+    padding: 1.25rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    border: 1px solid #E2E8F0;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Progress Messages - Modern Animated */
+.progress-message {
+    background: #EFF6FF;
+    color: #1E40AF;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    border: 2px solid #BFDBFE;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        border-color: #BFDBFE;
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+
+    50% {
+        border-color: #60A5FA;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+}
+
+/* Sidebar Styling */
+.sidebar .sidebar-content {
+    background-color: #F8FAFC;
+}
+
+/* Sidebar Header - Minimal height */
+[data-testid="stSidebarHeader"] {
+    height: 2rem !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Remove top padding from sidebar */
+[data-testid="stSidebar"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+[data-testid="stSidebar"]>div {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Text Area Styling - Better Contrast */
+.stTextArea textarea {
+    color: #1E293B !important;
+    font-family: 'Inter', monospace !important;
+    font-size: 0.9rem !important;
+    line-height: 1.6 !important;
+}
+
+.stTextArea textarea:disabled {
+    color: #334155 !important;
+    opacity: 1 !important;
+    background-color: #F8FAFC !important;
+}
+
+/* Button Enhancements - Improved Touch Targets */
+.stButton>button {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 200ms ease;
+    cursor: pointer !important;
+    font-family: 'Inter', sans-serif;
+    min-height: 44px;
+    padding: 0.65rem 1.5rem;
+}
+
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
+}
+
+.stButton>button:focus {
+    outline: 2px solid #0369A1;
+    outline-offset: 2px;
+}
+
+/* Success Animation */
+.success-animation {
+    animation: slideInFromTop 0.5s ease-out;
+}
+
+@keyframes slideInFromTop {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Accessibility - Focus States */
+:focus-visible {
+    outline: 2px solid #0369A1;
+    outline-offset: 2px;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Typography Improvements */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    color: #1E293B;
+}
+
+p {
+    max-width: 75ch;
+    line-height: 1.6;
+}
+
+/* Streamlit Element Overrides */
+.stTextInput>label,
+.stSelectbox>label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: #1E293B;
+    font-size: 0.875rem;
+}
+
+/* Fix column vertical alignment - align items to bottom */
+[data-testid="column"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* Ensure buttons align with inputs */
+[data-testid="column"] .stButton {
+    margin-bottom: 0;
+}
+
+/* Fix header centering */
+.main-header,
+.sub-header {
+    display: block;
+    width: 100%;
+}
+
+/* Brief Panel in Step 4 */
+.brief-panel {
+    background: #F8FAFC;
+    border-left: 3px solid #3B5998;
+    padding: 1rem;
+    border-radius: 0 8px 8px 0;
+    height: 100%;
+}
+
+/* Step 4 Tabs - High contrast with dark blue bar */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0;
+    background: #3B5998;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    border-radius: 6px;
+    padding: 0.6rem 1.25rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.stTabs [aria-selected="true"] {
+    background: white !important;
+    color: #3B5998 !important;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Remove default tab underline indicator */
+.stTabs [data-baseweb="tab-highlight"] {
+    display: none;
+}
+
+.stTabs [data-baseweb="tab-border"] {
+    display: none;
+}
+
+/* Step 4 tab content area - tighter spacing */
+.stTabs [data-baseweb="tab-panel"] {
+    padding-top: 0.75rem;
+}
+
+/* Status message alignment */
+.status-inline {
+    display: flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.status-inline.generating {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.status-inline.success {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+/* Sidebar File Menu Styling */
+[data-testid="stSidebar"] .stButton button,
+[data-testid="stSidebar"] .stDownloadButton button {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #E2E8F0;
+    background: white;
+    color: #1E293B;
+    font-weight: 500;
+    text-align: left;
+    justify-content: flex-start;
+}
+
+[data-testid="stSidebar"] .stButton button:hover,
+[data-testid="stSidebar"] .stDownloadButton button:hover {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+}
+
+/* Reduce spacing between stacked buttons */
+[data-testid="stSidebar"] .stButton,
+[data-testid="stSidebar"] .stDownloadButton {
+    margin-bottom: 0.25rem;
+}
+
+/* Sidebar file uploader styling */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] {
+    margin-bottom: 0.5rem;
+}
+
+/* Hide the label */
+[data-testid="stSidebar"] [data-testid="stFileUploader"]>label {
+    display: none !important;
+}
+
+/* Style the dropzone */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
+    border: 1px dashed #CBD5E1 !important;
+    background: #F8FAFC !important;
+    border-radius: 0.375rem !important;
+    padding: 1rem !important;
+}
+
+/* Hide ALL default content inside dropzone instructions - target all nested elements */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] div,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] span,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] p,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] small {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Show only our custom text via pseudo-element on the dropzone itself */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"]::before {
+    content: "Drop Existing Project Here" !important;
+    display: block !important;
+    font-size: 0.8rem !important;
+    color: #64748B !important;
+    margin-bottom: 0.5rem !important;
+    text-align: center !important;
+}
+
+/* Keep the Browse files button visible */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button {
+    display: inline-flex !important;
+    visibility: visible !important;
+}
+
+/* Hide file size limits text anywhere in the uploader */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] small,
+[data-testid="stSidebar"] [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] small {
+    display: none !important;
+}
+
+/* Reduce margins around Streamlit dividers (st.divider) */
+hr {
+    margin-top: 0 !important;
+    margin-bottom: 0.25rem !important;
+}
+
+/* Target Streamlit's specific divider element */
+[data-testid="stHorizontalRule"] {
+    margin-top: 0 !important;
+    margin-bottom: 0.15rem !important;
+    padding: 0 !important;
+}
+
+/* Also reduce margins in the element container holding the divider */
+[data-testid="stElementContainer"]:has(hr),
+[data-testid="stElementContainer"]:has([data-testid="stHorizontalRule"]) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* ============================================
+   CUSTOM TAB BAR (Step 4)
+   ============================================ */
+
+.custom-tabs {
+    display: flex;
+    gap: 0;
+    background: #3B5998;
+    border-radius: 10px;
+    padding: 6px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.tab-button {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.25rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer !important;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.tab-button.active {
+    background: white !important;
+    color: #3B5998 !important;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button .checkmark {
+    color: #10B981;
+    font-weight: bold;
+}
+
+.tab-button.active .checkmark {
+    color: #10B981;
+}
+
+/* ============================================
+   CHAPTER GROUP CARDS (Step 3)
+   ============================================ */
+
+.chapter-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.type-badge.thematic {
+    background: #DBEAFE;
+    color: #1E40AF;
+}
+
+.type-badge.methodological {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.type-badge.theoretical {
+    background: #E0E7FF;
+    color: #3730A3;
+}
+
+.type-badge.empirical {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.type-badge.default {
+    background: #F1F5F9;
+    color: #475569;
+}
+
+.chapter-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    background: #E2E8F0;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #475569;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ============================================
+   PROGRESS TIMER (AI Operations)
+   ============================================ */
+
+.progress-timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: #EFF6FF;
+    color: #1E40AF;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    border: 2px solid #BFDBFE;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.progress-timer .spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #BFDBFE;
+    border-top: 3px solid #3B82F6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.progress-timer .elapsed {
+    font-variant-numeric: tabular-nums;
+    min-width: 3rem;
+    text-align: right;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   STEP 3 BOTTOM SECTION
+   ============================================ */
+
+.step3-actions {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+    border-top: 1px solid #E2E8F0;
+    margin-top: 1rem;
+    border-radius: 0 0 8px 8px;
+}
+
+.proceed-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: white;
+    border: 2px solid #3B5998;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.proceed-section h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1E293B;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.proceed-section p {
+    margin: 0 0 1rem 0;
+    color: #64748B;
+    font-size: 0.875rem;
+}
+
+/* Confirmation dialog styling */
+.confirm-dialog-content {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.confirm-dialog-content p {
+    color: #475569;
+    margin-bottom: 1.5rem;
+}
+
+.confirm-dialog-warning {
+    background: #FEF3C7;
+    border-left: 3px solid #F59E0B;
+    padding: 0.75rem 1rem;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1rem;
+    text-align: left;
+    color: #92400E;
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   DOWNLOAD ALL BUTTON (Step 4)
+   ============================================ */
+
+/* Container for Download All button styling */
+.download-all-container {
+    /* Marker class - no styling needed */
+}
+
+/* Target download buttons globally by key pattern in the last column */
+/* Since Streamlit doesn't preserve wrapper structure, we use a global rule
+   that targets the specific download button by its element key */
+button[kind="secondary"]:has(+ [data-testid="stMarkdownContainer"]),
+[data-testid="stDownloadButton"] button {
+    /* Default download button styling - no change */
+}
+
+/* Step 4 Tab Row - ensure consistent button heights and alignment */
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) {
+    align-items: stretch !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"] {
+    display: flex !important;
+    align-items: stretch !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"] > div {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"] > div > div {
+    height: 100% !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) button {
+    height: 100% !important;
+    min-height: 42px !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    padding: 0.5rem 0.25rem !important;
+}
+
+/* Override for Download All button specifically - use :has selector on parent column */
+[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button {
+    background-color: #3B5998 !important;
+    color: white !important;
+    border: none !important;
+}
+
+[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] button:hover {
+    background-color: #2d4373 !important;
+    color: white !important;
+}
+
+/* Ensure download button container stretches to match other buttons */
+[data-testid="stColumn"]:last-child [data-testid="stDownloadButton"] {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Style the disabled Download All placeholder button */
+[data-testid="stColumn"]:last-child [data-testid="stButton"] button:disabled {
+    background-color: #F1F5F9 !important;
+    color: #94A3B8 !important;
+    border: 1px solid #E2E8F0 !important;
+}
+
+/* ============================================
+   STEP 4 CONTENT AREA - Top align columns
+   ============================================ */
+
+/* Force all horizontal blocks to align items at top by default */
+[data-testid="stHorizontalBlock"] {
+    align-items: flex-start !important;
+}
+
+/* Override for tab bar row - keep stretch alignment for button heights */
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) {
+    align-items: stretch !important;
+}
+
+/* Force columns to align content at top */
+[data-testid="stColumn"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+
+/* Ensure the inner content wrapper also aligns to top */
+[data-testid="stColumn"] > div {
+    flex: 0 0 auto !important;
+}
+
+/* Reduce vertical gap between tab bar row and content area */
+[data-testid="stVerticalBlock"] > [data-testid="stVerticalBlockBorderWrapper"] {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Reduce gap between consecutive horizontal blocks */
+[data-testid="stHorizontalBlock"] + [data-testid="stHorizontalBlock"] {
+    margin-top: 0.25rem !important;
+}
+
+/* Tighten spacing in Step 4 content area */
+[data-testid="stVerticalBlock"] > div:has([data-testid="stHorizontalBlock"]) {
+    margin-bottom: 0.25rem !important;
+}
+
+/* Reduce margin below text elements (like "Download Appendix" label) */
+[data-testid="stMarkdownContainer"] {
+    margin-bottom: 0 !important;
+}
+
+[data-testid="stMarkdownContainer"] p {
+    margin-bottom: 0.25rem !important;
+}
+
+/* Reduce gap below download buttons row */
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]):not(:has(button:disabled)) {
+    margin-bottom: 0 !important;
+}
+
+/* Minimize vertical block wrapper spacing */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Reduce element container margins globally in Step 4 */
+[data-testid="stElementContainer"] {
+    margin-bottom: 0.25rem !important;
+}
+
+/* Remove extra margin from hr elements */
+[data-testid="stElementContainer"]:has(hr) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Tighten column inner spacing */
+[data-testid="stColumn"] [data-testid="stVerticalBlock"] {
+    gap: 0.25rem !important;
+}
+
+/* Remove top margin from headings that follow hr dividers */
+[data-testid="stElementContainer"]:has(hr) + [data-testid="stElementContainer"] [data-testid="stMarkdownContainer"] h1,
+[data-testid="stElementContainer"]:has(hr) + [data-testid="stElementContainer"] [data-testid="stMarkdownContainer"] h2 {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Also target all h1 elements in the appendix content to reduce their top margin */
+[data-testid="stColumn"] h1:first-of-type {
+    margin-top: 0.25rem !important;
+}
+
+/* Reduce margin on all markdown headings in content area */
+[data-testid="stMarkdownContainer"] h1 {
+    margin-top: 0.5rem !important;
+}

@@ -30,7 +30,7 @@ git add .
 git commit -m "Initial commit: Appendix Generator"
 
 # Add GitHub remote (replace USERNAME with your GitHub username)
-git remote add origin https://github.com/USERNAME/appendix-generator.git
+git remote add origin https://github.com/eli0s78/Appendix-Generator.git
 
 # Push to GitHub
 git push -u origin main

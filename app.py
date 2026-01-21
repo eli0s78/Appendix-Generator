@@ -1,5 +1,5 @@
 """
-Forward Thinking - Foresight Appendix Generator
+Appendix Generator
 
 A Streamlit application that helps generate future-oriented appendices for academic books.
 Uses Google Gemini for AI analysis and generation.
@@ -9,6 +9,8 @@ import streamlit as st
 import json
 import os
 import re
+import zipfile
+from io import BytesIO
 from dotenv import load_dotenv
 from prompts import get_analysis_prompt, get_generation_prompt
 from utils import (
@@ -25,7 +27,11 @@ from utils import (
     export_to_pdf,
     export_planning_table_to_markdown,
     export_planning_table_to_docx,
-    export_planning_table_to_pdf
+    export_planning_table_to_pdf,
+    save_session,
+    load_session,
+    get_session_filename,
+    decode_api_key
 )
 
 # Load environment variables for developer mode
@@ -33,452 +39,20 @@ load_dotenv()
 
 # Page configuration
 st.set_page_config(
-    page_title="Foresight Appendix Generator",
+    page_title="Appendix Generator",
     page_icon="🔮",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS - Modern Professional Design System
-# Design System: Clean, Modern Academic Research Tool
-# Color Palette: Refined Blue-Grey (Professional & Trustworthy)
-# Typography: Inter (Clean Sans-Serif) + System Fonts
-st.markdown("""
-<style>
-    /* Import Modern Typography */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+# Load external CSS
+def load_css():
+    css_file = os.path.join(os.path.dirname(__file__), "assets", "styles.css")
+    with open(css_file, "r") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-    /* Professional Icon System using Unicode and SVG */
-    .icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.25em;
-        height: 1.25em;
-        margin-right: 0.5em;
-    }
+load_css()
 
-    .icon-check::before { content: "✓"; font-weight: 600; }
-    .icon-circle::before { content: "○"; }
-    .icon-key::before { content: "🔑"; }
-    .icon-book::before { content: "📖"; }
-    .icon-search::before { content: "🔍"; }
-    .icon-sparkles::before { content: "✨"; }
-    .icon-info::before { content: "ⓘ"; font-weight: 600; }
-    .icon-warning::before { content: "⚠"; }
-    .icon-error::before { content: "✕"; font-weight: 600; }
-    .icon-download::before { content: "↓"; font-weight: 600; }
-
-    /* Global Styles */
-    * {
-        cursor: default;
-    }
-
-    button, a, [role="button"] {
-        cursor: pointer !important;
-    }
-
-    /* AGGRESSIVE: Remove ALL top spacing */
-    .main {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    .main .block-container {
-        padding-top: 0 !important;
-        padding-bottom: 1rem !important;
-        margin-top: 0 !important;
-        max-width: 100% !important;
-    }
-
-    /* Remove default spacing from first element */
-    .main .block-container > div:first-child {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    /* Remove default paragraph margins */
-    .main .block-container p {
-        margin-top: 0 !important;
-    }
-
-    /* Streamlit Header - Keep visible but minimal */
-    .stAppHeader {
-        background-color: rgba(255, 255, 255, 0.0) !important;
-        visibility: visible !important;
-        height: auto !important;
-    }
-
-    /* Main Block Container - Reduced padding for better space utilization */
-    .stMainBlockContainer {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-        padding-top: 0.25rem !important;
-        padding-bottom: 0rem !important;
-        max-width: 100% !important;
-    }
-
-    /* Legacy support for older block-container class */
-    .main .block-container {
-        padding-top: 0.25rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-        max-width: 100% !important;
-    }
-
-    /* Ensure content is centered in wide mode */
-    .block-container {
-        max-width: 100% !important;
-    }
-
-    /* Main Headers - Compact for better space utilization */
-    .main-header {
-        font-size: 2rem !important;
-        font-weight: 700 !important;
-        color: #0F172A !important;
-        text-align: center !important;
-        margin-bottom: 0.25rem !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        letter-spacing: -0.02em !important;
-        line-height: 1.2 !important;
-    }
-    .sub-header {
-        font-size: 1.1rem !important;
-        color: #475569 !important;
-        text-align: center !important;
-        margin-bottom: 0.75rem !important;
-        margin-top: 0 !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        font-weight: 400 !important;
-        font-family: 'Inter', sans-serif !important;
-        line-height: 1.4 !important;
-        width: 100% !important;
-    }
-
-    /* Step Headers - Clean Modern Style */
-    .step-header {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #1E293B;
-        margin-top: 2.5rem;
-        margin-bottom: 1.25rem;
-        padding-bottom: 0;
-        border-bottom: none;
-        font-family: 'Inter', sans-serif;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    /* Wizard Step Indicator */
-    .wizard-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 1.5rem 0 0.5rem;
-        margin-bottom: 0;
-    }
-
-    .wizard-steps {
-        display: flex;
-        align-items: flex-start;
-        position: relative;
-    }
-
-    .wizard-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    .step-circle {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 1.1rem;
-        font-family: 'Inter', sans-serif;
-        transition: all 0.3s ease;
-    }
-
-    .step-circle.completed {
-        background: #3B5998;
-        color: white;
-    }
-
-    .step-circle.current {
-        background: white;
-        border: 3px solid #3B5998;
-        color: #3B5998;
-    }
-
-    .step-circle.upcoming {
-        background: white;
-        border: 2px solid #E2E8F0;
-        color: #94A3B8;
-    }
-
-    .step-connector {
-        width: 100px;
-        height: 2px;
-        background: #E2E8F0;
-        margin: 0 0.5rem;
-        margin-top: 24px; /* Center vertically with circles */
-    }
-
-    .step-connector.completed {
-        background: #3B5998;
-    }
-
-    .step-label {
-        margin-top: 0.75rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        font-family: 'Inter', sans-serif;
-        color: #64748B;
-        white-space: nowrap;
-    }
-
-    .step-label.active {
-        color: #1E293B;
-        font-weight: 600;
-    }
-
-    /* Step Underline Indicator - highlights current step */
-    .step-underline {
-        width: 80px;
-        height: 4px;
-        background: linear-gradient(90deg, #3B5998, #5B7EC2);
-        border-radius: 2px;
-        margin-top: 0.5rem;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .step-underline.active {
-        opacity: 1;
-    }
-
-    /* Remove any white box styling from markdown containers */
-    [data-testid="stMarkdown"] {
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-    }
-
-    /* Info Boxes - Modern Clean Style */
-    .info-box {
-        background-color: #F0F9FF;
-        padding: 1rem 1.25rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        border-left: 3px solid #0EA5E9;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.875rem;
-        line-height: 1.6;
-        color: #0C4A6E;
-    }
-    .success-box {
-        background-color: #F0FDF4;
-        padding: 1rem 1.25rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        border-left: 3px solid #10B981;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.875rem;
-        line-height: 1.6;
-        color: #065F46;
-    }
-    .warning-box {
-        background-color: #FFFBEB;
-        padding: 1rem 1.25rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        border-left: 3px solid #F59E0B;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.875rem;
-        line-height: 1.6;
-        color: #92400E;
-    }
-    .error-box {
-        background-color: #FEF2F2;
-        padding: 1rem 1.25rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        border-left: 3px solid #EF4444;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.875rem;
-        line-height: 1.6;
-        color: #991B1B;
-    }
-
-    /* Cards and Containers */
-    .metric-card {
-        background: #FFFFFF;
-        padding: 1.25rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
-        border: 1px solid #E2E8F0;
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* Progress Messages - Modern Animated */
-    .progress-message {
-        background: #EFF6FF;
-        color: #1E40AF;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        text-align: center;
-        font-weight: 500;
-        font-family: 'Inter', sans-serif;
-        border: 2px solid #BFDBFE;
-        animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-        0%, 100% {
-            border-color: #BFDBFE;
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-        }
-        50% {
-            border-color: #60A5FA;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-        }
-    }
-
-    /* Sidebar Styling */
-    .sidebar .sidebar-content {
-        background-color: #F8FAFC;
-    }
-
-    /* Sidebar Header - Minimal height */
-    [data-testid="stSidebarHeader"] {
-        height: 2rem !important;
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    /* Remove top padding from sidebar */
-    [data-testid="stSidebar"] {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    [data-testid="stSidebar"] > div {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    /* Text Area Styling - Better Contrast */
-    .stTextArea textarea {
-        color: #1E293B !important;
-        font-family: 'Inter', monospace !important;
-        font-size: 0.9rem !important;
-        line-height: 1.6 !important;
-    }
-
-    .stTextArea textarea:disabled {
-        color: #334155 !important;
-        opacity: 1 !important;
-        background-color: #F8FAFC !important;
-    }
-
-    /* Button Enhancements - Improved Touch Targets */
-    .stButton>button {
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 200ms ease;
-        cursor: pointer !important;
-        font-family: 'Inter', sans-serif;
-        min-height: 44px;
-        padding: 0.65rem 1.5rem;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
-    }
-    .stButton>button:focus {
-        outline: 2px solid #0369A1;
-        outline-offset: 2px;
-    }
-
-    /* Success Animation */
-    .success-animation {
-        animation: slideInFromTop 0.5s ease-out;
-    }
-    @keyframes slideInFromTop {
-        0% {
-            transform: translateY(-20px);
-            opacity: 0;
-        }
-        100% {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-
-    /* Accessibility - Focus States */
-    :focus-visible {
-        outline: 2px solid #0369A1;
-        outline-offset: 2px;
-    }
-
-    /* Reduced Motion Support */
-    @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-        }
-    }
-
-    /* Typography Improvements */
-    body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        line-height: 1.6;
-        color: #1E293B;
-    }
-
-    p {
-        max-width: 75ch;
-        line-height: 1.6;
-    }
-
-    /* Streamlit Element Overrides */
-    .stTextInput > label, .stSelectbox > label {
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        color: #1E293B;
-        font-size: 0.875rem;
-    }
-
-    /* Fix column vertical alignment - align items to bottom */
-    [data-testid="column"] {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-    }
-
-    /* Ensure buttons align with inputs */
-    [data-testid="column"] .stButton {
-        margin-bottom: 0;
-    }
-
-    /* Fix header centering */
-    .main-header, .sub-header {
-        display: block;
-        width: 100%;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # Initialize session state
 if 'api_key_valid' not in st.session_state:
@@ -497,6 +71,18 @@ if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
 if 'working_model' not in st.session_state:
     st.session_state.working_model = "gemini-2.5-pro-preview-05-06"
+# Track saved state for unsaved changes detection
+if 'last_saved_state' not in st.session_state:
+    st.session_state.last_saved_state = None
+# Pending action when confirmation is needed (e.g., 'new_project', 'load_project')
+if 'pending_action' not in st.session_state:
+    st.session_state.pending_action = None
+# Pending file data for load action
+if 'pending_load_data' not in st.session_state:
+    st.session_state.pending_load_data = None
+# Flag to track if user saved in modal and should proceed
+if 'modal_saved_and_proceed' not in st.session_state:
+    st.session_state.modal_saved_and_proceed = False
 
 # Developer Mode: Auto-load API key from .env
 DEVELOPER_MODE = os.getenv('DEVELOPER_MODE', 'false').lower() == 'true'
@@ -509,9 +95,354 @@ if DEVELOPER_MODE and 'developer_mode_initialized' not in st.session_state:
         configure_gemini(env_api_key)
         st.session_state.developer_mode_initialized = True
 
+# Step 4 Dev Mode: Skip directly to Step 4 with mock data
+# Set STEP4_DEV_MODE=true in .env to enable
+STEP4_DEV_MODE = os.getenv('STEP4_DEV_MODE', 'false').lower() == 'true'
+if STEP4_DEV_MODE and 'step4_dev_initialized' not in st.session_state:
+    # Mock all prerequisites as complete
+    st.session_state.api_key_valid = True
+    st.session_state.api_key = "mock-api-key-for-dev"
+    st.session_state.book_content = "Mock book content for Step 4 development testing."
+    st.session_state.extraction_info = {'final_chars': 50000, 'pages': 200}
+    st.session_state.ready_to_generate = True
+    st.session_state.working_model = "gemini-2.5-pro-preview-05-06"
 
-def render_wizard_steps():
-    """Render the wizard step indicator with progress bar"""
+    # Mock planning data with realistic chapter groups (11 groups for tab testing)
+    st.session_state.planning_data = {
+        "book_title": "Mock Book: Future of Technology",
+        "chapters": [
+            {
+                "group_id": "GROUP_A",
+                "chapters": ["Chapter 1: Introduction to AI", "Chapter 2: Machine Learning Basics"],
+                "foresight_task": "Analyze how artificial intelligence and machine learning technologies will evolve over the next decade."
+            },
+            {
+                "group_id": "GROUP_B",
+                "chapters": ["Chapter 3: Cloud Computing", "Chapter 4: Edge Computing"],
+                "foresight_task": "Examine the convergence of cloud and edge computing paradigms."
+            },
+            {
+                "group_id": "GROUP_C",
+                "chapters": ["Chapter 5: Cybersecurity", "Chapter 6: Privacy"],
+                "foresight_task": "Investigate emerging cybersecurity threats and privacy concerns."
+            },
+            {
+                "group_id": "GROUP_D",
+                "chapters": ["Chapter 7: Sustainable Tech", "Chapter 8: Green Computing"],
+                "foresight_task": "Assess how technology can address environmental challenges."
+            },
+            {
+                "group_id": "GROUP_E",
+                "chapters": ["Chapter 9: Quantum Computing", "Chapter 10: Quantum Algorithms"],
+                "foresight_task": "Explore the emerging field of quantum computing."
+            },
+            {
+                "group_id": "GROUP_F",
+                "chapters": ["Chapter 11: Biotechnology", "Chapter 12: Bioinformatics"],
+                "foresight_task": "Examine the intersection of biology and technology."
+            },
+            {
+                "group_id": "GROUP_G",
+                "chapters": ["Chapter 13: Space Tech", "Chapter 14: Satellites"],
+                "foresight_task": "Analyze the future of space technology."
+            },
+            {
+                "group_id": "GROUP_H",
+                "chapters": ["Chapter 15: Robotics", "Chapter 16: Automation"],
+                "foresight_task": "Explore advances in robotics and industrial automation."
+            },
+            {
+                "group_id": "GROUP_I",
+                "chapters": ["Chapter 17: AR/VR", "Chapter 18: Metaverse"],
+                "foresight_task": "Analyze immersive technologies and virtual worlds."
+            },
+            {
+                "group_id": "GROUP_J",
+                "chapters": ["Chapter 19: Blockchain", "Chapter 20: Web3"],
+                "foresight_task": "Examine decentralized technologies and their applications."
+            },
+            {
+                "group_id": "GROUP_K",
+                "chapters": ["Chapter 21: Ethics", "Chapter 22: Governance"],
+                "foresight_task": "Consider ethical frameworks for emerging technologies."
+            }
+        ]
+    }
+
+    # Pre-generate one appendix to show both states (generated vs not generated)
+    st.session_state.generated_appendices = {
+        "GROUP_A": """# Appendix: Future of Artificial Intelligence and Machine Learning
+
+## Executive Summary
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+
+## 1. Current State Analysis
+
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+### 1.1 Neural Network Advances
+
+Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+
+### 1.2 Natural Language Processing
+
+Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
+
+## 2. Future Projections (2025-2035)
+
+Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
+
+### 2.1 Short-term Developments (2025-2028)
+
+- **Advancement 1**: Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam
+- **Advancement 2**: Nisi ut aliquid ex ea commodi consequatur
+- **Advancement 3**: Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse
+
+### 2.2 Medium-term Developments (2028-2032)
+
+At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.
+
+### 2.3 Long-term Vision (2032-2035)
+
+Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio.
+
+## 3. Societal Implications
+
+Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
+
+### 3.1 Employment and Workforce
+
+Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.
+
+### 3.2 Education and Skills
+
+Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.
+
+## 4. Ethical Considerations
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+## 5. Recommendations
+
+1. **Policy Framework**: Establish comprehensive AI governance structures
+2. **Education Investment**: Develop AI literacy programs across all education levels
+3. **Research Collaboration**: Foster international cooperation on AI safety research
+4. **Industry Standards**: Create interoperable standards for AI systems
+
+## Conclusion
+
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+
+---
+*This appendix was generated for development testing purposes.*
+"""
+    }
+
+    st.session_state.step4_dev_initialized = True
+
+# Step 3 Dev Mode: Skip directly to Step 3 with mock planning data for layout testing
+# Set STEP3_DEV_MODE=true in .env to enable
+STEP3_DEV_MODE = os.getenv('STEP3_DEV_MODE', 'false').lower() == 'true'
+if STEP3_DEV_MODE and 'step3_dev_initialized' not in st.session_state:
+    # Mock prerequisites as complete (API key and book extraction)
+    st.session_state.api_key_valid = True
+    st.session_state.api_key = "mock-api-key-for-dev"
+    st.session_state.book_content = "Mock book content for Step 3 layout development testing."
+    st.session_state.extraction_info = {'final_chars': 850000, 'pages': 350, 'was_truncated': False}
+    st.session_state.working_model = "gemini-3-pro-preview"
+
+    # Add mock extraction messages to test layout consistency
+    st.session_state.extraction_messages = [
+        "📚 Bibliography/References section removed (77,420 chars saved)",
+        "📖 Index section removed (5,100 chars saved)"
+    ]
+
+    st.session_state.current_step = 3
+    st.session_state.step3_dev_initialized = True
+    # Mock planning data with realistic structure for layout testing
+    st.session_state.planning_data = {
+        "book_title": "Trends and Facts in the Greek Economy: Resources, Infrastructures and Defence",
+        "total_chapters": 15,
+        "scope": "This book provides a comprehensive analysis of key economic, social, environmental, and geopolitical trends affecting Greece. It delves into the country's natural resources, energy systems, climate change impacts, demographics, and strategic infrastructure.",
+        "disciplines": ["Economics", "Political Science", "Environmental Studies", "Demography", "Strategic Studies"],
+        "languages": ["Greek", "English"],
+        "chapters": [
+            {
+                "group_id": "GROUP_A_NaturalResources",
+                "description": "This group explores Greece's significant natural resource endowment, focusing on both hydrocarbon reserves and critical minerals.",
+                "chapters": ["Chapter 1: Oil & Gas Reserves", "Chapter 2: Critical Minerals", "Chapter 3: Water Resources"],
+                "foresight_task": "Analyze future resource extraction scenarios and sustainability implications."
+            },
+            {
+                "group_id": "GROUP_B_EnergySystem",
+                "description": "This group comprehensively analyzes Greece's energy system. Chapter 3 outlines the historical shift from fossil fuels.",
+                "chapters": ["Chapter 4: Energy Transition", "Chapter 5: Renewable Energy", "Chapter 6: Grid Infrastructure"],
+                "foresight_task": "Project energy mix evolution and grid modernization requirements through 2050."
+            },
+            {
+                "group_id": "GROUP_C_ClimateChange",
+                "description": "This group addresses the multifaceted challenge of climate change in Greece.",
+                "chapters": ["Chapter 7: Climate Impacts", "Chapter 8: Adaptation Strategies", "Chapter 9: Coastal Vulnerability"],
+                "foresight_task": "Model climate scenarios and assess adaptation investment priorities."
+            },
+            {
+                "group_id": "GROUP_D_Demographics",
+                "description": "This group explores Greece's demographic landscape and its profound socio-economic implications.",
+                "chapters": ["Chapter 10: Population Trends", "Chapter 11: Migration Patterns", "Chapter 12: Labor Force"],
+                "foresight_task": "Forecast demographic shifts and their economic consequences."
+            },
+            {
+                "group_id": "GROUP_E_Infrastructure",
+                "description": "Examines Greece's physical infrastructure and its future planning needs.",
+                "chapters": ["Chapter 13: Transport Networks", "Chapter 14: Digital Infrastructure", "Chapter 15: Urban Planning"],
+                "foresight_task": "Evaluate infrastructure investment priorities and modernization pathways."
+            }
+        ]
+    }
+    
+    st.session_state.step3_dev_initialized = True
+
+
+def get_project_state_snapshot() -> dict:
+    """Get a snapshot of current project state for comparison."""
+    return {
+        'book_content': st.session_state.get('book_content'),
+        'extraction_info': st.session_state.get('extraction_info'),
+        'planning_data': st.session_state.get('planning_data'),
+        'generated_appendices': dict(st.session_state.get('generated_appendices', {})),
+        'ready_to_generate': st.session_state.get('ready_to_generate', False),
+    }
+
+
+def has_project_data() -> bool:
+    """Check if there's any project data (beyond just API key)."""
+    return (
+        st.session_state.get('book_content') is not None or
+        st.session_state.get('planning_data') is not None or
+        bool(st.session_state.get('generated_appendices'))
+    )
+
+
+def has_unsaved_changes() -> bool:
+    """Check if current state differs from last saved state."""
+    if not has_project_data():
+        return False
+
+    last_saved = st.session_state.get('last_saved_state')
+    if last_saved is None:
+        # Never saved - any project data means unsaved changes
+        return True
+
+    current = get_project_state_snapshot()
+    return current != last_saved
+
+
+def mark_as_saved():
+    """Mark current state as saved."""
+    st.session_state.last_saved_state = get_project_state_snapshot()
+
+
+def clear_project_state():
+    """Clear all project-related session state."""
+    keys_to_clear = [
+        'book_content', 'extraction_info', 'planning_data',
+        'generated_appendices', 'ready_to_generate', 'last_saved_state',
+        'pending_action', 'pending_load_data', 'truncation_warning',
+        'step4_dev_initialized', 'developer_mode_initialized',
+        'modal_saved_and_proceed', 'last_processed_file_id',
+        'active_generation_tab'
+    ]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+    # Reset to defaults
+    st.session_state.generated_appendices = {}
+    st.session_state.ready_to_generate = False
+    st.session_state.last_saved_state = None
+
+
+def clear_pending_state():
+    """Clear all modal/pending state flags. Call on Cancel or after action completes."""
+    keys_to_clear = [
+        'pending_action',
+        'pending_load_data',
+        'modal_saved_and_proceed',
+        'last_processed_file_id',
+        'api_key_invalid_on_load',
+        'awaiting_load_dialog'
+    ]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+
+
+def execute_project_load(loaded_data: dict) -> bool:
+    """
+    Apply loaded project data to session state.
+
+    Args:
+        loaded_data: Deserialized session data dict
+
+    Returns:
+        True if load succeeded, False if API key is invalid (modal will show)
+    """
+    # Restore project data
+    st.session_state.book_content = loaded_data.get("book_content")
+    st.session_state.extraction_info = loaded_data.get("extraction_info")
+    st.session_state.planning_data = loaded_data.get("planning_data")
+    st.session_state.generated_appendices = loaded_data.get("generated_appendices", {})
+    st.session_state.ready_to_generate = loaded_data.get("ready_to_generate", False)
+    st.session_state.working_model = loaded_data.get("working_model")
+
+    # Clear file tracking to allow future uploads
+    st.session_state.last_processed_file_id = None
+
+    # Restore and validate API key
+    api_key = decode_api_key(loaded_data.get("api_key_encoded"))
+    if api_key:
+        success, _ = test_api_key(api_key)
+        if success:
+            st.session_state.api_key = api_key
+            st.session_state.api_key_valid = True
+            configure_gemini(api_key)
+        else:
+            st.session_state.api_key_invalid_on_load = True
+            st.session_state.api_key_valid = False
+    else:
+        st.session_state.api_key_valid = False
+
+    # Mark as saved (this is a freshly loaded project)
+    mark_as_saved()
+    return not st.session_state.get('api_key_invalid_on_load', False)
+
+
+def create_all_appendices_zip(generated_appendices: dict) -> bytes:
+    """Create a ZIP file containing all generated appendices in multiple formats."""
+    zip_buffer = BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for group_id, content in generated_appendices.items():
+            clean_name = re.sub(r'[^\w\-]', '_', group_id)
+
+            # Add markdown version
+            md_bytes = export_to_markdown(content, f"Appendix - {group_id}")
+            zf.writestr(f"{clean_name}/appendix_{clean_name}.md", md_bytes)
+
+            # Add docx version
+            docx_bytes = export_to_docx(content, f"Appendix - {group_id}")
+            zf.writestr(f"{clean_name}/appendix_{clean_name}.docx", docx_bytes)
+
+            # Add pdf version
+            pdf_bytes = export_to_pdf(content, f"Appendix - {group_id}")
+            zf.writestr(f"{clean_name}/appendix_{clean_name}.pdf", pdf_bytes)
+
+    zip_buffer.seek(0)
+    return zip_buffer.getvalue()
+
+
+def render_header_and_wizard():
+    """Render the header (title, subtitle) and wizard step indicator in a single container"""
     steps = [
         ("API Setup", st.session_state.api_key_valid),
         ("Upload Book", st.session_state.book_content is not None),
@@ -528,56 +459,104 @@ def render_wizard_steps():
     if st.session_state.ready_to_generate:  # Only advance when user explicitly proceeds
         current = 4
 
-    # Build HTML for steps
-    steps_html = '<div class="wizard-container"><div class="wizard-steps">'
+    # Build HTML - all in one container for consistent centering
+    header_html = '<div class="app-header-container">'
+    header_html += '<p class="main-header">Appendix Generator</p>'
+    header_html += '<p class="sub-header">Generate Future-Oriented Appendices for Academic Books</p>'
+    
+    # Accessible Wizard Container
+    header_html += '<div class="wizard-container" role="progressbar" aria-label="Completion Progress" aria-valuemin="1" aria-valuemax="4" aria-valuenow="' + str(current) + '">'
+    header_html += '<div class="wizard-steps">'
 
     for i, (label, completed) in enumerate(steps, 1):
         # Connector (before step, except first)
         if i > 1:
             conn_class = "completed" if steps[i-2][1] else ""
-            steps_html += f'<div class="step-connector {conn_class}"></div>'
+            header_html += f'<div class="step-connector {conn_class}" aria-hidden="true"></div>'
 
         # Step circle
         if completed:
             circle_class = "completed"
             circle_content = "✓"
+            aria_current = ""
+            step_status = "completed"
         elif i == current:
             circle_class = "current"
             circle_content = str(i)
+            aria_current = ' aria-current="step"'
+            step_status = "current"
         else:
             circle_class = "upcoming"
             circle_content = str(i)
+            aria_current = ""
+            step_status = "upcoming"
 
         label_class = "active" if i == current else ""
         underline_class = "active" if i == current else ""
 
-        steps_html += f'''
-        <div class="wizard-step">
+        header_html += f'''
+        <div class="wizard-step" aria-label="Step {i}: {label} ({step_status})">
             <div class="step-circle {circle_class}">{circle_content}</div>
             <div class="step-label {label_class}">{label}</div>
             <div class="step-underline {underline_class}"></div>
         </div>
         '''
 
-    steps_html += '</div></div>'
+    header_html += '</div></div></div>'
 
-    st.markdown(steps_html, unsafe_allow_html=True)
+    st.markdown(header_html, unsafe_allow_html=True)
 
     return current
 
 
 def main():
-    # Header
-    st.markdown('<p class="main-header">Appendix Generator</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Generate Future-Oriented Appendices for Academic Books</p>', unsafe_allow_html=True)
+    # Header and Wizard - rendered in single container for consistent centering
+    current_step = render_header_and_wizard()
 
-    # Simplified Sidebar
+    # Sidebar
     with st.sidebar:
-        # Working Model Display (compact)
-        if st.session_state.api_key_valid and st.session_state.working_model:
-            st.caption(f"Model: {st.session_state.working_model}")
+        # === FILE MENU (Top) - Stacked buttons ===
+        st.markdown("**File**")
 
-        # Quick Help - Collapsed by default
+        # New button - check for unsaved changes or confirm close
+        if st.button("New Project", key="new_session", use_container_width=True):
+            if has_unsaved_changes():
+                st.session_state.pending_action = 'new_project'
+            elif st.session_state.book_content is not None:
+                # Project exists but is saved - ask for confirmation
+                st.session_state.confirm_new_project = True
+            else:
+                # No project open, just reset
+                clear_project_state()
+            st.rerun()
+
+        # Save button - mark as saved when clicked
+        session_data = save_session(dict(st.session_state))
+        filename = get_session_filename(dict(st.session_state))
+        if st.download_button(
+            "Save Project",
+            session_data,
+            filename,
+            "application/gzip",
+            key="save_session",
+            use_container_width=True,
+            on_click=mark_as_saved
+        ):
+            pass  # on_click handles marking as saved
+
+        # Load Project button - check unsaved changes first, then open dialog
+        if st.button("Load Project", key="load_project_btn", use_container_width=True):
+            if has_unsaved_changes():
+                # Show unsaved changes warning first
+                st.session_state.pending_action = 'load_project'
+                st.session_state.awaiting_load_dialog = True  # Flag to show load dialog after
+            else:
+                st.session_state.show_load_dialog = True
+            st.rerun()
+
+        st.markdown("---")
+
+        # === QUICK HELP ===
         with st.expander("Quick Help", expanded=False):
             st.markdown("""
             **Workflow:**
@@ -587,13 +566,212 @@ def main():
             4. **Generate** - Create appendices for chapters
             """, unsafe_allow_html=True)
 
-    # Wizard Step Indicator
-    current_step = render_wizard_steps()
+        with st.expander("About", expanded=False):
+            st.markdown("""**Appendix Generator** v1.0
+<hr style="margin: 0.5rem 0;">
 
+**Creator:** Elias Pierrakos<br>
+**Organization:** eLearning EKPA<br>
+**Scientific Supervisor:** Panagiotis Petrakis
+<hr style="margin: 0.5rem 0;">
+
+*Made with Google Antigravity* © 2026""", unsafe_allow_html=True)
+
+        # === DEV MODE (if enabled) ===
+        if STEP4_DEV_MODE:
+            st.markdown("---")
+            st.warning("⚠️ **DEV MODE**\nUsing mock data.")
+            if st.button("Reset Dev Mode", key="reset_dev"):
+                for key in ['step4_dev_initialized', 'generated_appendices']:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
+
+        # === MODEL INFO (bottom) ===
+        if st.session_state.api_key_valid and st.session_state.working_model:
+            st.markdown("---")
+            st.caption(f"Model: {st.session_state.working_model}")
+
+    # API Key Modal - shown when loaded session has invalid API key
+    if st.session_state.get('api_key_invalid_on_load'):
+        @st.dialog("API Key Required")
+        def api_key_modal():
+            st.markdown("Your saved API key is no longer valid. Please enter a new one to continue.")
+            new_key = st.text_input("Google AI Studio API Key", type="password", key="modal_api_key")
+            if st.button("Validate & Continue", type="primary", key="modal_validate"):
+                if new_key:
+                    success, msg = test_api_key(new_key)
+                    if success:
+                        st.session_state.api_key = new_key
+                        st.session_state.api_key_valid = True
+                        st.session_state.working_model = get_working_model(new_key)
+                        configure_gemini(new_key)
+                        del st.session_state['api_key_invalid_on_load']
+                        st.rerun()
+                    else:
+                        st.error(f"Invalid key: {msg}")
+
+        api_key_modal()
+
+    # Unsaved Changes Confirmation Modal
+    if st.session_state.get('pending_action') in ['new_project', 'load_project']:
+        action = st.session_state.pending_action
+        action_label = "create a new project" if action == 'new_project' else "load another project"
+
+        @st.dialog("Unsaved Changes")
+        def unsaved_changes_modal():
+            st.markdown(f"You have unsaved changes. Do you want to save before you {action_label}?")
+
+            # Check if user already saved (via the download button)
+            if st.session_state.get('modal_saved_and_proceed'):
+                # User clicked save, now proceed with action
+                pending = st.session_state.pending_action
+                pending_data = st.session_state.get('pending_load_data')
+                awaiting_load = st.session_state.get('awaiting_load_dialog')
+
+                # Clear pending state FIRST
+                clear_pending_state()
+
+                if pending == 'new_project':
+                    clear_project_state()
+                elif pending == 'load_project':
+                    if pending_data:
+                        # We have data from sidebar uploader (old flow)
+                        execute_project_load(pending_data)
+                    elif awaiting_load:
+                        # Show load dialog (new flow)
+                        st.session_state.show_load_dialog = True
+
+                st.rerun()
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                # Save button - downloads the file
+                modal_session_data = save_session(dict(st.session_state))
+                modal_filename = get_session_filename(dict(st.session_state))
+
+                def on_save_click():
+                    mark_as_saved()
+                    st.session_state.modal_saved_and_proceed = True
+
+                st.download_button(
+                    "Save Project",
+                    modal_session_data,
+                    modal_filename,
+                    "application/gzip",
+                    key="modal_save_download",
+                    use_container_width=True,
+                    type="primary",
+                    on_click=on_save_click
+                )
+
+            with col2:
+                if st.button("Discard", key="modal_discard", use_container_width=True):
+                    # Discard changes and proceed with action
+                    pending = st.session_state.pending_action
+                    pending_data = st.session_state.get('pending_load_data')
+                    awaiting_load = st.session_state.get('awaiting_load_dialog')
+
+                    # Clear pending state FIRST
+                    clear_pending_state()
+
+                    if pending == 'new_project':
+                        clear_project_state()
+                    elif pending == 'load_project':
+                        if pending_data:
+                            # We have data from sidebar uploader (old flow)
+                            execute_project_load(pending_data)
+                        elif awaiting_load:
+                            # Show load dialog (new flow)
+                            st.session_state.show_load_dialog = True
+
+                    st.rerun()
+
+            with col3:
+                if st.button("Cancel", key="modal_cancel", use_container_width=True):
+                    clear_pending_state()  # Clears ALL flags properly
+                    st.rerun()
+
+        unsaved_changes_modal()
+
+    # Load Project Dialog - shown when user clicks Load Project button
+    if st.session_state.get('show_load_dialog'):
+        @st.dialog("Load Project")
+        def load_project_dialog():
+            st.markdown("Select a saved project file (.appendix-session) to load:")
+
+            # Use None for type to accept custom extensions, then validate manually
+            uploaded_file = st.file_uploader(
+                "Choose file",
+                type=None,  # Accept all files, validate extension manually
+                key="load_dialog_file"
+            )
+
+            # Validate file extension
+            file_valid = False
+            if uploaded_file is not None:
+                if uploaded_file.name.endswith('.appendix-session'):
+                    file_valid = True
+                else:
+                    st.error("Please select a .appendix-session file")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if st.button("Load", key="dialog_load_btn", use_container_width=True, type="primary", disabled=not file_valid):
+                    if uploaded_file is not None and file_valid:
+                        try:
+                            file_data = uploaded_file.read()
+                            loaded = load_session(file_data)
+
+                            # Close dialog
+                            del st.session_state['show_load_dialog']
+
+                            # Load directly (unsaved changes already handled before dialog)
+                            execute_project_load(loaded)
+                            st.session_state.load_success = True
+
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Failed to load: {str(e)}")
+
+            with col2:
+                if st.button("Cancel", key="dialog_cancel_btn", use_container_width=True):
+                    del st.session_state['show_load_dialog']
+                    st.rerun()
+
+        load_project_dialog()
+
+    # Show load success message in main area
+    if st.session_state.get('load_success'):
+        st.success("Project loaded successfully!")
+        del st.session_state['load_success']
+
+    # Confirm New Project Dialog - shown when closing a saved project
+    if st.session_state.get('confirm_new_project'):
+        @st.dialog("Close Project")
+        def confirm_new_project_dialog():
+            st.markdown("Are you sure you want to close this project and start a new one?")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                if st.button("Yes", key="confirm_new_yes", use_container_width=True, type="primary"):
+                    del st.session_state['confirm_new_project']
+                    clear_project_state()
+                    st.rerun()
+
+            with col2:
+                if st.button("Cancel", key="confirm_new_cancel", use_container_width=True):
+                    del st.session_state['confirm_new_project']
+                    st.rerun()
+
+        confirm_new_project_dialog()
 
     # Step 1: API Setup
     if current_step == 1:
-        st.markdown('<p class="step-header">API Setup</p>', unsafe_allow_html=True)
+
 
         # Developer Mode Indicator
         if DEVELOPER_MODE:
@@ -662,7 +840,7 @@ def main():
 
     # Step 2: Upload Book
     elif current_step == 2:
-        st.markdown('<p class="step-header">Upload Book</p>', unsafe_allow_html=True)
+
 
         uploaded_file = st.file_uploader(
             "Upload your book (PDF)",
@@ -725,9 +903,25 @@ def main():
                     st.session_state.book_content = content
                     st.session_state.extraction_info = extraction_info
 
-                    # Store truncation warning to show on Step 3 if needed
+                    # Store extraction messages to show on Step 3
+                    messages = []
+                    
+                    # Bibliography removal info
+                    if extraction_info.get('bibliography_removed', False):
+                        bib_saved = extraction_info.get('bibliography_chars_saved', 0)
+                        messages.append(f"📚 Bibliography/References section removed ({bib_saved:,} chars saved)")
+                    
+                    # Index removal info
+                    if extraction_info.get('index_removed', False):
+                        idx_saved = extraction_info.get('index_chars_saved', 0)
+                        messages.append(f"📖 Index section removed ({idx_saved:,} chars saved)")
+                    
+                    # Truncation warning
                     if extraction_info.get('was_truncated', False):
-                        st.session_state.truncation_warning = f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted. If chapters are missing, use 'Request Changes' to add them manually."
+                        messages.append(f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted.")
+                    
+                    if messages:
+                        st.session_state.extraction_messages = messages
 
                     # Auto-advance to Step 3
                     st.rerun()
@@ -737,16 +931,17 @@ def main():
 
     # Step 3: Analyze & Review
     elif current_step == 3:
-        st.markdown('<p class="step-header">Analyze & Review</p>', unsafe_allow_html=True)
 
-        # Show truncation warning from Step 2 if applicable
-        if st.session_state.get('truncation_warning'):
-            st.warning(st.session_state.truncation_warning)
-            # Clear after showing once
-            del st.session_state.truncation_warning
 
         # Step 3a: Analyze Book - horizontal layout
         st.subheader("Analyze Book")
+
+        # Initialize analyzing state
+        if 'analyzing' not in st.session_state:
+            st.session_state.analyzing = False
+
+        # Determine button state
+        button_disabled = st.session_state.planning_data is not None or st.session_state.analyzing
 
         col_btn, col_status = st.columns([1, 3])
 
@@ -754,27 +949,57 @@ def main():
             analyze_clicked = st.button(
                 "Analyze Book & Create Planning Table",
                 type="primary",
-                disabled=st.session_state.planning_data is not None
+                disabled=button_disabled,
+                key="analyze_book_btn"
             )
 
         with col_status:
-            analysis_status = st.empty()
-            # Show status if already analyzed
-            if st.session_state.planning_data and not analyze_clicked:
-                analysis_status.markdown('<div class="success-box" style="margin: 0; padding: 0.5rem 1rem;">✓ <strong>Analysis Complete!</strong> Review below, then go to <strong>Generate</strong></div>', unsafe_allow_html=True)
+            # Determine what status to show
+            if st.session_state.analyzing:
+                st.markdown('''<div class="progress-timer" style="margin: 0; padding: 0.5rem 1rem;">
+                    <div class="spinner"></div>
+                    <span>Analyzing book with AI — this may take 30-60 seconds...</span>
+                </div>''', unsafe_allow_html=True)
+            elif st.session_state.planning_data:
+                st.markdown('<div class="success-box" style="margin: 0; padding: 0.5rem 1rem;">✓ <strong>Analysis Complete!</strong> Review below, then go to <strong>Generate</strong></div>', unsafe_allow_html=True)
+            
+            # Show extraction messages from Step 2 inline here
+            elif st.session_state.get('extraction_messages'):
+                msg_html = ""
+                for msg in st.session_state.extraction_messages:
+                    if msg.startswith("⚠️"):
+                        msg_html += f'<div class="warning-box" style="margin: 0; margin-bottom: 0.5rem; padding: 0.5rem 1rem;">{msg}</div>'
+                    else:
+                        msg_html += f'<div class="info-box" style="margin: 0; margin-bottom: 0.5rem; padding: 0.5rem 1rem;">{msg}</div>'
+                st.markdown(msg_html, unsafe_allow_html=True)
+                
+                # Clear after showing once? 
+                # User wants persistent alignment, but previously it cleared. 
+                # Let's keep the clear logic but AFTER rendering this frame? 
+                # Actually, standard Streamlit pattern is to clear on next rerun.
+                # If we delete it here, it might disappear on interaction. 
+                # For now, let's NOT delete it immediately to see if it stabilizes the layout.
+                # del st.session_state.extraction_messages 
 
         if analyze_clicked:
-            analysis_status.markdown('<div class="progress-message" style="margin: 0; padding: 0.5rem;">Analyzing with AI — 30-60 seconds...</div>', unsafe_allow_html=True)
+            # Clear messages when user actually proceeds to analyze
+            if 'extraction_messages' in st.session_state:
+                del st.session_state.extraction_messages
+            st.session_state.analyzing = True
+            st.rerun()
 
+        # Perform analysis if in analyzing state (after rerun)
+        if st.session_state.analyzing and not st.session_state.planning_data:
             try:
                 configure_gemini(st.session_state.api_key)
                 prompt = get_analysis_prompt(st.session_state.book_content)
                 response = call_gemini(prompt, st.session_state.working_model)
                 planning_data = parse_json_response(response)
                 st.session_state.planning_data = planning_data
-
-                analysis_status.markdown('<div class="success-box" style="margin: 0; padding: 0.5rem 1rem;">✓ <strong>Analysis Complete!</strong> Review below, then go to <strong>Generate</strong></div>', unsafe_allow_html=True)
+                st.session_state.analyzing = False
+                st.rerun()
             except Exception as e:
+                st.session_state.analyzing = False
                 st.error(f"Error during analysis: {str(e)}")
                 with st.expander("Debug info"):
                     st.text(str(e))
@@ -805,47 +1030,70 @@ def main():
 
             chapters = planning_data.get('chapters', [])
 
-            for i, chapter in enumerate(chapters):
-                # Full-width expander header with group_id and full description
-                expander_label = f"{chapter.get('group_id', f'Chapter {i+1}')} - {chapter.get('content_summary', 'N/A')[:100]}{'...' if len(chapter.get('content_summary', '')) > 100 else ''}"
+            def get_type_badge_class(group_type):
+                """Map group type to CSS badge class."""
+                type_lower = (group_type or '').lower()
+                if 'thematic' in type_lower or 'theme' in type_lower:
+                    return 'thematic'
+                elif 'method' in type_lower:
+                    return 'methodological'
+                elif 'theor' in type_lower:
+                    return 'theoretical'
+                elif 'empir' in type_lower or 'data' in type_lower:
+                    return 'empirical'
+                return 'default'
 
-                with st.expander(expander_label, expanded=False):
+            for i, chapter in enumerate(chapters):
+                group_id = chapter.get('group_id', f'Group {i+1}')
+                group_type = chapter.get('group_type', 'General')
+                chapter_count = len(chapter.get('chapter_numbers', []))
+                content_summary = chapter.get('content_summary', 'N/A')
+                badge_class = get_type_badge_class(group_type)
+
+                # Enhanced expander label with badges
+                summary_preview = content_summary[:80] + '...' if len(content_summary) > 80 else content_summary
+
+                with st.expander(f"{group_id} — {summary_preview}", expanded=False):
+                    # Header with badges
+                    st.markdown(f'''
+                    <div class="chapter-card-header">
+                        <span class="type-badge {badge_class}">{group_type}</span>
+                        <span class="chapter-count-badge">{chapter_count} chapter{"s" if chapter_count != 1 else ""}</span>
+                    </div>
+                    ''', unsafe_allow_html=True)
+
                     # Two-column layout
                     col_left, col_right = st.columns([1, 1])
 
-                    # Left Column: Type, Chapters, Titles, Summary, Thematic Quadrants
+                    # Left Column: Chapters, Titles, Summary, Thematic Quadrants
                     with col_left:
-                        st.write(f"**Type:** {chapter.get('group_type', 'N/A')}")
-                        st.write(f"**Chapters:** {', '.join(map(str, chapter.get('chapter_numbers', [])))}")
-                        st.write(f"**Titles:** {', '.join(chapter.get('chapter_titles', []))}")
+                        chapter_nums = chapter.get('chapter_numbers', [])
+                        chapter_titles = chapter.get('chapter_titles', [])
 
-                        st.write("**Summary:**")
-                        st.info(chapter.get('content_summary', 'N/A'))
+                        st.markdown("**Chapters:**")
+                        for num, title in zip(chapter_nums, chapter_titles):
+                            st.write(f"  Ch. {num}: {title}")
 
-                        st.write("**Thematic Quadrants:**")
-                        for q in chapter.get('thematic_quadrants', []):
-                            st.write(f"  • {q}")
+                        st.markdown("**Summary:**")
+                        st.info(content_summary)
 
-                    # Right Column: Foresight Task & Assignment Brief
+                        quadrants = chapter.get('thematic_quadrants', [])
+                        if quadrants:
+                            st.markdown("**Thematic Quadrants:**")
+                            for q in quadrants:
+                                st.write(f"  • {q}")
+
+                    # Right Column: Foresight Task
                     with col_right:
-                        st.write("**Foresight Task:**")
-                        st.markdown("*Assignment Brief*")
-
-                        # Calculate dynamic height based on content
+                        st.markdown("**Foresight Task (Assignment Brief):**")
                         foresight_text = chapter.get('foresight_task', 'N/A')
-                        # Estimate lines: count newlines + estimate line wrapping (assume ~80 chars per line)
-                        line_count = foresight_text.count('\n') + (len(foresight_text) // 80) + 1
-                        # Set height: ~25px per line, min 150px, max 800px
-                        dynamic_height = max(150, min(800, line_count * 25))
 
-                        st.text_area(
-                            "Assignment Brief",
-                            foresight_text,
-                            height=dynamic_height,
-                            key=f"task_{i}",
-                            disabled=True,
-                            label_visibility="collapsed"
-                        )
+                        # Use consistent height with scrolling
+                        st.markdown(f'''
+                        <div class="info-box" style="max-height: 300px; overflow-y: auto; font-size: 0.9rem; margin-top: 0.5rem;">
+                            {foresight_text}
+                        </div>
+                        ''', unsafe_allow_html=True)
 
             # Download planning table options
             # Validate planning data before offering downloads
@@ -902,195 +1150,254 @@ def main():
             else:
                 st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
 
-            # Request changes (expanded by default for review)
-            st.subheader("Request Changes")
-            change_request = st.text_area(
-                "Describe any changes you'd like to make to the planning table:",
-                placeholder="E.g., 'Combine chapters 4 and 5' or 'Add climate change as a quadrant' or 'Remove chapter 3 from the analysis'",
-                height=100
-            )
-
-            if change_request and st.button("Apply Changes", type="secondary"):
-                progress_placeholder = st.empty()
-                progress_placeholder.markdown('<div class="progress-message">Applying changes...</div>', unsafe_allow_html=True)
-
-                try:
-                    configure_gemini(st.session_state.api_key)
-
-                    change_prompt = f"""
-                    Here is the current planning table:
-
-                    {json.dumps(planning_data, indent=2)}
-
-                    The user requests the following changes:
-
-                    {change_request}
-
-                    Please return the UPDATED planning table as a JSON object with the same structure.
-                    Apply the requested changes while maintaining the overall format.
-                    Return ONLY the JSON object.
-                    """
-
-                    response = call_gemini(change_prompt, st.session_state.working_model)
-                    updated_data = parse_json_response(response)
-                    st.session_state.planning_data = updated_data
-
-                    progress_placeholder.empty()
-                    st.success("✓ Changes applied!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error applying changes: {str(e)}")
-
-            # Proceed to Generate button
+            # Bottom section: Changes (optional) then Proceed button
             st.divider()
-            st.markdown("**Ready to generate appendices?** Review the planning table above and request any changes before proceeding.")
 
-            if st.button("Proceed to Generate Appendices →", type="primary"):
-                st.session_state.ready_to_generate = True
-                st.rerun()
+            # Collapsible Request Changes section (above proceed button)
+            with st.expander("Need to make changes? (Optional)", expanded=False):
+                st.caption("Describe any changes you'd like to make to the planning table:")
+                change_request = st.text_area(
+                    "Change request",
+                    placeholder="E.g., 'Combine chapters 4 and 5' or 'Add climate change as a quadrant' or 'Remove chapter 3 from the analysis'",
+                    height=100,
+                    label_visibility="collapsed"
+                )
+
+                if change_request and st.button("Apply Changes", type="secondary"):
+                    progress_placeholder = st.empty()
+                    progress_placeholder.markdown('''<div class="progress-timer" style="margin: 0; padding: 0.5rem 1rem;">
+                        <div class="spinner"></div>
+                        <span>Applying changes...</span>
+                    </div>''', unsafe_allow_html=True)
+
+                    try:
+                        configure_gemini(st.session_state.api_key)
+
+                        change_prompt = f"""
+                        Here is the current planning table:
+
+                        {json.dumps(planning_data, indent=2)}
+
+                        The user requests the following changes:
+
+                        {change_request}
+
+                        Please return the UPDATED planning table as a JSON object with the same structure.
+                        Apply the requested changes while maintaining the overall format.
+                        Return ONLY the JSON object.
+                        """
+
+                        response = call_gemini(change_prompt, st.session_state.working_model)
+                        updated_data = parse_json_response(response)
+                        st.session_state.planning_data = updated_data
+
+                        progress_placeholder.empty()
+                        st.success("Changes applied successfully!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error applying changes: {str(e)}")
+
+            # Proceed button - prominent, centered
+            st.markdown("<div style='height: 0.5rem'></div>", unsafe_allow_html=True)
+            col_spacer1, col_proceed_btn, col_spacer2 = st.columns([1, 2, 1])
+            with col_proceed_btn:
+                if st.button("Proceed to Generate Appendices", type="primary", use_container_width=True, key="proceed_to_generate"):
+                    st.session_state.ready_to_generate = True
+                    st.rerun()
+
+            # Add padding at the bottom
+            st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
     # Step 4: Generate
     elif current_step == 4:
-        st.markdown('<p class="step-header">Generate Appendices</p>', unsafe_allow_html=True)
 
         chapters = st.session_state.planning_data.get('chapters', [])
+        total_groups = len(chapters)
+        generated_count = len(st.session_state.generated_appendices)
 
-        # Dropdown to select which appendix to generate - horizontal layout
-        chapter_options = {
-            f"{ch.get('group_id', f'Item {i}')} - {', '.join(ch.get('chapter_titles', [])[:2])}": i
-            for i, ch in enumerate(chapters)
-        }
+        # Build tab group data
+        tab_group_ids = [ch.get('group_id', f'Group_{i}') for i, ch in enumerate(chapters)]
 
-        # Selector (70%) + View brief (30%) - horizontal
-        col_select, col_brief = st.columns([7, 3])
+        # Initialize active tab in session state if not present
+        if 'active_generation_tab' not in st.session_state:
+            st.session_state.active_generation_tab = tab_group_ids[0] if tab_group_ids else None
 
-        with col_select:
-            selected = st.selectbox(
-                "Select chapter/group to generate appendix for:",
-                options=list(chapter_options.keys())
-            )
+        # Ensure active tab is valid (in case chapters changed)
+        if st.session_state.active_generation_tab not in tab_group_ids and tab_group_ids:
+            st.session_state.active_generation_tab = tab_group_ids[0]
 
-        selected_idx = chapter_options[selected]
-        selected_chapter = chapters[selected_idx]
+        # Tab Bar Row: Tabs + Download All button
+        # Calculate column widths based on number of tabs
+        num_tabs = len(tab_group_ids)
+        tab_col_widths = [1] * num_tabs + [1]  # Equal width for tabs + download button
 
-        with col_brief:
-            with st.expander("View assignment brief", expanded=False):
-                st.write(selected_chapter.get('foresight_task', 'N/A'))
+        tab_row_cols = st.columns(tab_col_widths)
 
-        # Generate button (25%) + status (75%) - horizontal
-        col_gen_btn, col_gen_status = st.columns([1, 3])
+        # Render tab buttons
+        for idx, group_id in enumerate(tab_group_ids):
+            with tab_row_cols[idx]:
+                is_generated = group_id in st.session_state.generated_appendices
+                is_active = group_id == st.session_state.active_generation_tab
+                checkmark = " ✓" if is_generated else ""
 
-        with col_gen_btn:
-            generate_clicked = st.button("Generate Appendix", type="primary")
+                # Use different button types for active vs inactive
+                if is_active:
+                    # Active tab - show as primary (highlighted)
+                    st.button(
+                        f"{group_id}{checkmark}",
+                        key=f"tab_active_{group_id}",
+                        type="primary",
+                        use_container_width=True,
+                        disabled=True  # Can't click already-active tab
+                    )
+                else:
+                    # Inactive tab - secondary style
+                    if st.button(
+                        f"{group_id}{checkmark}",
+                        key=f"tab_btn_{group_id}",
+                        type="secondary",
+                        use_container_width=True
+                    ):
+                        st.session_state.active_generation_tab = group_id
+                        st.rerun()
 
-        with col_gen_status:
-            gen_status = st.empty()
-
-        if generate_clicked:
-            gen_status.markdown('<div class="progress-message" style="margin: 0; padding: 0.5rem;">Generating with AI — 1-2 minutes...</div>', unsafe_allow_html=True)
-
-            try:
-                configure_gemini(st.session_state.api_key)
-
-                chapter_info = json.dumps(selected_chapter, indent=2)
-                target = selected_chapter.get('group_id', 'Unknown')
-
-                prompt = get_generation_prompt(
-                    target_assignment=target,
-                    chapter_info=chapter_info,
-                    book_content=st.session_state.book_content,
-                    word_count=st.sidebar.text_input if hasattr(st.sidebar, 'text_input') else "2500-3500"
+        # Download All button in last column (styled blue via CSS)
+        with tab_row_cols[-1]:
+            if generated_count > 0:
+                zip_data = create_all_appendices_zip(st.session_state.generated_appendices)
+                st.download_button(
+                    f"Download All ({generated_count}/{total_groups})",
+                    zip_data,
+                    "all_appendices.zip",
+                    "application/zip",
+                    key="download_all_zip",
+                    use_container_width=True
+                )
+            else:
+                # Show disabled-looking button placeholder
+                st.button(
+                    f"Download All (0/{total_groups})",
+                    key="download_all_disabled",
+                    use_container_width=True,
+                    disabled=True
                 )
 
-                response = call_gemini(prompt, st.session_state.working_model)
+        # Get selected tab index
+        selected_idx = tab_group_ids.index(st.session_state.active_generation_tab)
 
-                # Store generated appendix
-                st.session_state.generated_appendices[target] = response
+        # Render only the selected tab content
+        chapter = chapters[selected_idx]
+        group_id = chapter.get('group_id', 'Unknown')
+        brief_text = chapter.get('foresight_task', 'N/A')
+        is_generated = group_id in st.session_state.generated_appendices
 
-                gen_status.markdown('<div class="success-box" style="margin: 0; padding: 0.5rem 1rem;">✓ <strong>Generated!</strong> Download below.</div>', unsafe_allow_html=True)
+        # Two-column layout: Content (65%) | Brief (35%)
 
-            except Exception as e:
-                st.error(f"Error generating appendix: {str(e)}")
+        col_main, col_brief = st.columns([65, 35], vertical_alignment="top")
 
-        # Display generated appendix
-        selected_target = selected_chapter.get('group_id', 'Unknown')
-        if selected_target in st.session_state.generated_appendices:
-            st.divider()
-            st.subheader(f"Generated Appendix: {selected_target}")
+        with col_brief:
+            # Use a container with position:sticky to keep brief at top
+            st.markdown(f"""
+            <div style="position: sticky; top: 1rem;">
+                <p style="font-weight: 600; margin-bottom: 0.5rem;">📋 Assignment Brief</p>
+                <div style="background: #E3F2FD; border-left: 4px solid #2196F3; padding: 1rem; border-radius: 4px; color: #0D47A1;">
+                    {brief_text}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            appendix_content = st.session_state.generated_appendices[selected_target]
+        with col_main:
+            if is_generated:
+                # GENERATED STATE: Show downloads + preview
+                appendix_content = st.session_state.generated_appendices[group_id]
 
-            # Preview
-            st.markdown(appendix_content)
+                # Download buttons row
+                st.markdown("**Download Appendix**")
+                c1, c2, c3, c4 = st.columns(4)
+                clean_name = re.sub(r'[^\w\-]', '_', group_id)
 
-            # Download buttons
-            col1, col2, col3, col4 = st.columns(4)
+                with c1:
+                    md_bytes = export_to_markdown(appendix_content, f"Appendix - {group_id}")
+                    st.download_button("📥 Markdown", md_bytes, f"appendix_{clean_name}.md", "text/markdown", key=f"md_{group_id}")
+                with c2:
+                    docx_bytes = export_to_docx(appendix_content, f"Appendix - {group_id}")
+                    st.download_button("📥 Word", docx_bytes, f"appendix_{clean_name}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"docx_{group_id}")
+                with c3:
+                    pdf_bytes = export_to_pdf(appendix_content, f"Appendix - {group_id}")
+                    st.download_button("📥 PDF", pdf_bytes, f"appendix_{clean_name}.pdf", "application/pdf", key=f"pdf_{group_id}")
+                with c4:
+                    if st.button("Regenerate", key=f"regen_{group_id}", type="primary"):
+                        st.session_state.confirm_regenerate = group_id
+                        st.rerun()
 
-            with col1:
-                try:
-                    md_bytes = export_to_markdown(appendix_content, f"Appendix - {selected_target}")
-                    # Clean filename: remove special chars, keep alphanumeric and underscores
-                    clean_filename = re.sub(r'[^\w\-]', '_', selected_target)
-                    st.download_button(
-                        "📥 Download .md",
-                        md_bytes,
-                        file_name=f"appendix_{clean_filename}.md",
-                        mime="text/markdown",
-                        key=f"dl_md_{selected_target}"
+                # Content preview - minimal divider
+                st.markdown('<hr style="margin: 0.25rem 0 0 0; border: none; border-top: 1px solid #E2E8F0;">', unsafe_allow_html=True)
+                st.markdown(appendix_content)
+
+            else:
+                # NOT GENERATED STATE: Show generate button + aligned status
+                gen_col, status_col = st.columns([1, 3])
+
+                with gen_col:
+                    generate_clicked = st.button("Generate Appendix", type="primary", key=f"gen_{group_id}")
+
+                with status_col:
+                    status_placeholder = st.empty()
+
+                if generate_clicked:
+                    # Show animated progress indicator
+                    status_placeholder.markdown(
+                        '''<div class="progress-timer" style="margin: 0; padding: 0.5rem 1rem;">
+                            <div class="spinner"></div>
+                            <span>Generating appendix with AI...</span>
+                        </div>''',
+                        unsafe_allow_html=True
                     )
-                except Exception as e:
-                    st.warning(f"MD export error: {str(e)}")
 
-            with col2:
-                try:
-                    docx_bytes = export_to_docx(appendix_content, f"Appendix - {selected_target}")
-                    clean_filename = re.sub(r'[^\w\-]', '_', selected_target)
-                    st.download_button(
-                        "📥 Download .docx",
-                        docx_bytes,
-                        file_name=f"appendix_{clean_filename}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key=f"dl_docx_{selected_target}"
-                    )
-                except Exception as e:
-                    st.warning(f"DOCX export error: {str(e)}")
+                    try:
+                        configure_gemini(st.session_state.api_key)
+                        chapter_info = json.dumps(chapter, indent=2)
 
-            with col3:
-                try:
-                    pdf_bytes = export_to_pdf(appendix_content, f"Appendix - {selected_target}")
-                    clean_filename = re.sub(r'[^\w\-]', '_', selected_target)
-                    st.download_button(
-                        "📥 Download .pdf",
-                        pdf_bytes,
-                        file_name=f"appendix_{clean_filename}.pdf",
-                        mime="application/pdf",
-                        key=f"dl_pdf_{selected_target}"
-                    )
-                except Exception as e:
-                    st.warning(f"PDF export error: {str(e)}")
-
-            with col4:
-                if st.button("Regenerate Appendix"):
-                    del st.session_state.generated_appendices[selected_target]
-                    st.rerun()
-
-        # Show all generated appendices (collapsible)
-        if st.session_state.generated_appendices:
-            with st.expander("All Generated Appendices", expanded=False):
-                for target, content in st.session_state.generated_appendices.items():
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        st.write(f"✅ {target}")
-                    with col2:
-                        md_bytes = export_to_markdown(content, f"Appendix - {target}")
-                        st.download_button(
-                            "Download",
-                            md_bytes,
-                            file_name=f"appendix_{target.replace(' ', '_')}.md",
-                            mime="text/markdown",
-                            key=f"dl_{target}"
+                        prompt = get_generation_prompt(
+                            target_assignment=group_id,
+                            chapter_info=chapter_info,
+                            book_content=st.session_state.book_content,
+                            word_count="2500-3500"
                         )
 
+                        response = call_gemini(prompt, st.session_state.working_model)
+                        st.session_state.generated_appendices[group_id] = response
+                        st.rerun()
+
+                    except Exception as e:
+                        status_placeholder.error(f"Error: {str(e)}")
+
+        # Regenerate Confirmation Dialog (placed after Step 4 content)
+        if st.session_state.get('confirm_regenerate'):
+            regen_group_id = st.session_state.confirm_regenerate
+
+            @st.dialog("Confirm Regeneration")
+            def confirm_regenerate_dialog():
+                st.markdown(f"""
+                <div class="confirm-dialog-content">
+                    <div class="confirm-dialog-warning">
+                        This will delete the current appendix for <strong>{regen_group_id}</strong> and generate a new one. This action cannot be undone.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Yes, Regenerate", key="confirm_regen_yes", type="primary", use_container_width=True):
+                        del st.session_state.generated_appendices[regen_group_id]
+                        del st.session_state['confirm_regenerate']
+                        st.rerun()
+                with col2:
+                    if st.button("Cancel", key="confirm_regen_cancel", use_container_width=True):
+                        del st.session_state['confirm_regenerate']
+                        st.rerun()
+
+            confirm_regenerate_dialog()
 
 
 if __name__ == "__main__":
