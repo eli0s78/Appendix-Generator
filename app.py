@@ -176,74 +176,61 @@ if STEP4_DEV_MODE and 'step4_dev_initialized' not in st.session_state:
         ]
     }
 
-    # Pre-generate one appendix to show both states (generated vs not generated)
-    st.session_state.generated_appendices = {
-        "GROUP_A": """# Appendix: Future of Artificial Intelligence and Machine Learning
+    # Pre-generate ALL appendices for complete UI testing
+    mock_appendix_content = """# Appendix: Future-Oriented Analysis
 
 ## Executive Summary
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 
 ## 1. Current State Analysis
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 
-### 1.1 Neural Network Advances
+### 1.1 Key Trends
 
-Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
 
-### 1.2 Natural Language Processing
+## 2. Future Projections
 
-Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
+Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.
 
-## 2. Future Projections (2025-2035)
+### 2.1 Short-term (2025-2028)
 
-Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
+- **Trend 1**: Ut enim ad minima veniam
+- **Trend 2**: Nisi ut aliquid ex ea commodi consequatur
+- **Trend 3**: Quis autem vel eum iure reprehenderit
 
-### 2.1 Short-term Developments (2025-2028)
+### 2.2 Long-term (2028-2035)
 
-- **Advancement 1**: Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam
-- **Advancement 2**: Nisi ut aliquid ex ea commodi consequatur
-- **Advancement 3**: Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse
+At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium.
 
-### 2.2 Medium-term Developments (2028-2032)
+## 3. Recommendations
 
-At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.
-
-### 2.3 Long-term Vision (2032-2035)
-
-Similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita distinctio.
-
-## 3. Societal Implications
-
-Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.
-
-### 3.1 Employment and Workforce
-
-Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae.
-
-### 3.2 Education and Skills
-
-Itaque earum rerum hic tenetur a sapiente delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus asperiores repellat.
-
-## 4. Ethical Considerations
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-
-## 5. Recommendations
-
-1. **Policy Framework**: Establish comprehensive AI governance structures
-2. **Education Investment**: Develop AI literacy programs across all education levels
-3. **Research Collaboration**: Foster international cooperation on AI safety research
-4. **Industry Standards**: Create interoperable standards for AI systems
+1. **Policy Framework**: Establish comprehensive governance structures
+2. **Education Investment**: Develop literacy programs
+3. **Research Collaboration**: Foster international cooperation
 
 ## Conclusion
 
-Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
 ---
 *This appendix was generated for development testing purposes.*
 """
+
+    st.session_state.generated_appendices = {
+        "GROUP_A": mock_appendix_content,
+        "GROUP_B": mock_appendix_content,
+        "GROUP_C": mock_appendix_content,
+        "GROUP_D": mock_appendix_content,
+        "GROUP_E": mock_appendix_content,
+        "GROUP_F": mock_appendix_content,
+        "GROUP_G": mock_appendix_content,
+        "GROUP_H": mock_appendix_content,
+        "GROUP_I": mock_appendix_content,
+        "GROUP_J": mock_appendix_content,
+        "GROUP_K": mock_appendix_content,
     }
 
     st.session_state.step4_dev_initialized = True
@@ -467,11 +454,16 @@ def create_all_appendices_zip(generated_appendices: dict) -> bytes:
 
 def render_header_and_wizard():
     """Render the header (title, subtitle) and wizard step indicator in a single container"""
+    # Check if ALL appendices are generated (Step 4 complete only when all done)
+    total_groups = len(st.session_state.planning_data.get('chapters', [])) if st.session_state.planning_data else 0
+    generated_count = len(st.session_state.generated_appendices)
+    all_generated = total_groups > 0 and generated_count >= total_groups
+
     steps = [
         ("API Setup", st.session_state.api_key_valid),
         ("Upload Book", st.session_state.book_content is not None),
         ("Analyze & Review", st.session_state.ready_to_generate),  # Complete when user clicks "Proceed"
-        ("Generate", bool(st.session_state.generated_appendices))
+        ("Generate", all_generated)  # Complete only when ALL appendices are generated
     ]
 
     # Determine current step (the first incomplete step)
@@ -1348,9 +1340,9 @@ def main():
                 is_active = group_id == st.session_state.active_generation_tab
                 checkmark = " ✓" if is_generated else ""
 
-                # Use different button types for active vs inactive
+                # Use different button types: active (disabled primary), completed (primary), incomplete (secondary)
                 if is_active:
-                    # Active tab - show as primary (highlighted)
+                    # Active tab - disabled primary, styled orange via CSS
                     st.button(
                         f"{group_id}{checkmark}",
                         key=f"tab_active_{group_id}",
@@ -1358,10 +1350,20 @@ def main():
                         use_container_width=True,
                         disabled=True  # Can't click already-active tab
                     )
-                else:
-                    # Inactive tab - secondary style
+                elif is_generated:
+                    # Completed tab (not active) - primary button, styled green via CSS
                     if st.button(
                         f"{group_id}{checkmark}",
+                        key=f"tab_complete_{group_id}",
+                        type="primary",
+                        use_container_width=True
+                    ):
+                        st.session_state.active_generation_tab = group_id
+                        st.rerun()
+                else:
+                    # Incomplete tab - secondary style (gray)
+                    if st.button(
+                        f"{group_id}",
                         key=f"tab_btn_{group_id}",
                         type="secondary",
                         use_container_width=True

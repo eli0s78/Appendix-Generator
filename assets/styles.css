@@ -820,10 +820,10 @@ hr {
 }
 
 .tab-button.active {
-    background: white !important;
-    color: #3B5998 !important;
+    background: #10B981 !important;
+    color: white !important;
     font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
 }
 
 .tab-button .checkmark {
@@ -832,7 +832,7 @@ hr {
 }
 
 .tab-button.active .checkmark {
-    color: #10B981;
+    color: white;
 }
 
 /* ============================================
@@ -1128,6 +1128,53 @@ button[kind="secondary"]:has(+ [data-testid="stMarkdownContainer"]),
 /* Reduce gap below download buttons row */
 [data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]):not(:has(button:disabled)) {
     margin-bottom: 0 !important;
+}
+
+/* ============================================
+   STEP 4: Tab Row Styling
+   - Active tab: disabled primary = orange
+   - Completed tab: enabled primary = green
+   - Incomplete tab: secondary = gray
+   Target only rows with 5+ columns (tab bar)
+   ============================================ */
+
+/* Tab bar row - target horizontal blocks with many columns (tab bar has 10+ columns) */
+/* Active tab (disabled primary button) - Orange */
+[data-testid="stHorizontalBlock"]:has([data-testid="stColumn"]:nth-child(5)) [data-testid="stColumn"] [data-testid="stButton"] button[kind="primary"]:disabled {
+    background-color: #F59E0B !important;
+    color: white !important;
+    border: none !important;
+    opacity: 1 !important;
+    cursor: default !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Completed tab (enabled primary button) - Green */
+[data-testid="stHorizontalBlock"]:has([data-testid="stColumn"]:nth-child(5)) [data-testid="stColumn"] [data-testid="stButton"] button[kind="primary"]:not(:disabled) {
+    background-color: #10B981 !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 500 !important;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stColumn"]:nth-child(5)) [data-testid="stColumn"] [data-testid="stButton"] button[kind="primary"]:not(:disabled):hover {
+    background-color: #059669 !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Incomplete tabs (secondary buttons in tab bar) - Gray */
+[data-testid="stHorizontalBlock"]:has([data-testid="stColumn"]:nth-child(5)) [data-testid="stColumn"] [data-testid="stButton"] button[kind="secondary"] {
+    background-color: #F1F5F9 !important;
+    color: #475569 !important;
+    border: 1px solid #E2E8F0 !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stColumn"]:nth-child(5)) [data-testid="stColumn"] [data-testid="stButton"] button[kind="secondary"]:hover {
+    background-color: #E2E8F0 !important;
+    color: #1E293B !important;
+    border-color: #CBD5E1 !important;
 }
 
 /* ============================================
