@@ -74,6 +74,13 @@ if 'working_model' not in st.session_state:
 # Track saved state for unsaved changes detection
 if 'last_saved_state' not in st.session_state:
     st.session_state.last_saved_state = None
+# Generation settings (exposed in Step 3)
+if 'forecast_years' not in st.session_state:
+    st.session_state.forecast_years = 15  # Default: 15 years ahead
+if 'word_count_option' not in st.session_state:
+    st.session_state.word_count_option = "Standard (2500-3500 words)"
+if 'word_count_value' not in st.session_state:
+    st.session_state.word_count_value = "2500-3500"
 # Pending action when confirmation is needed (e.g., 'new_project', 'load_project')
 if 'pending_action' not in st.session_state:
     st.session_state.pending_action = None
@@ -262,41 +269,58 @@ if STEP3_DEV_MODE and 'step3_dev_initialized' not in st.session_state:
     st.session_state.step3_dev_initialized = True
     # Mock planning data with realistic structure for layout testing
     st.session_state.planning_data = {
-        "book_title": "Trends and Facts in the Greek Economy: Resources, Infrastructures and Defence",
-        "total_chapters": 15,
-        "scope": "This book provides a comprehensive analysis of key economic, social, environmental, and geopolitical trends affecting Greece. It delves into the country's natural resources, energy systems, climate change impacts, demographics, and strategic infrastructure.",
-        "disciplines": ["Economics", "Political Science", "Environmental Studies", "Demography", "Strategic Studies"],
-        "languages": ["Greek", "English"],
+        "book_overview": {
+            "title": "Trends and Facts in the Greek Economy: Resources, Infrastructures and Defence",
+            "total_chapters": 15,
+            "scope": "This book provides a comprehensive analysis of key economic, social, environmental, and geopolitical trends affecting Greece. It delves into the country's natural resources, energy systems, climate change impacts, demographics, and strategic infrastructure.",
+            "disciplines": ["Economics", "Political Science", "Environmental Studies", "Demography", "Strategic Studies"],
+            "languages": ["Greek", "English"]
+        },
         "chapters": [
             {
-                "group_id": "GROUP_A_NaturalResources",
-                "description": "This group explores Greece's significant natural resource endowment, focusing on both hydrocarbon reserves and critical minerals.",
-                "chapters": ["Chapter 1: Oil & Gas Reserves", "Chapter 2: Critical Minerals", "Chapter 3: Water Resources"],
-                "foresight_task": "Analyze future resource extraction scenarios and sustainability implications."
+                "group_id": "GROUP_A",
+                "group_type": "Thematic",
+                "chapter_numbers": [1, 2, 3],
+                "chapter_titles": ["Oil & Gas Reserves", "Critical Minerals", "Water Resources"],
+                "content_summary": "This group explores Greece's significant natural resource endowment, focusing on both hydrocarbon reserves in the Aegean Sea and critical minerals essential for the green energy transition.",
+                "thematic_quadrants": ["Resource Economics", "Environmental Sustainability", "Geopolitical Strategy", "Technology & Extraction"],
+                "foresight_task": "Analyze future resource extraction scenarios considering technological advances, environmental constraints, geopolitical tensions in the Eastern Mediterranean, and the global shift toward sustainable energy sources."
             },
             {
-                "group_id": "GROUP_B_EnergySystem",
-                "description": "This group comprehensively analyzes Greece's energy system. Chapter 3 outlines the historical shift from fossil fuels.",
-                "chapters": ["Chapter 4: Energy Transition", "Chapter 5: Renewable Energy", "Chapter 6: Grid Infrastructure"],
-                "foresight_task": "Project energy mix evolution and grid modernization requirements through 2050."
+                "group_id": "GROUP_B",
+                "group_type": "Methodological",
+                "chapter_numbers": [4, 5, 6],
+                "chapter_titles": ["Energy Transition", "Renewable Energy", "Grid Infrastructure"],
+                "content_summary": "This group comprehensively analyzes Greece's energy system transformation, examining the historical shift from fossil fuels to renewables and the modernization of electrical grid infrastructure.",
+                "thematic_quadrants": ["Energy Policy", "Technological Innovation", "Economic Impact", "Infrastructure Development"],
+                "foresight_task": "Project energy mix evolution and grid modernization requirements through 2050, considering EU decarbonization targets, regional energy security concerns, and investment requirements for smart grid deployment."
             },
             {
-                "group_id": "GROUP_C_ClimateChange",
-                "description": "This group addresses the multifaceted challenge of climate change in Greece.",
-                "chapters": ["Chapter 7: Climate Impacts", "Chapter 8: Adaptation Strategies", "Chapter 9: Coastal Vulnerability"],
-                "foresight_task": "Model climate scenarios and assess adaptation investment priorities."
+                "group_id": "GROUP_C",
+                "group_type": "Empirical",
+                "chapter_numbers": [7, 8, 9],
+                "chapter_titles": ["Climate Impacts", "Adaptation Strategies", "Coastal Vulnerability"],
+                "content_summary": "This group addresses the multifaceted challenge of climate change in Greece, analyzing observed impacts on ecosystems, agriculture, and coastal areas while evaluating adaptation policy frameworks.",
+                "thematic_quadrants": ["Environmental Science", "Policy Response", "Economic Adaptation", "Social Resilience"],
+                "foresight_task": "Model climate scenarios and assess adaptation investment priorities, including coastal protection infrastructure, agricultural adaptation measures, and urban heat mitigation strategies for major cities."
             },
             {
-                "group_id": "GROUP_D_Demographics",
-                "description": "This group explores Greece's demographic landscape and its profound socio-economic implications.",
-                "chapters": ["Chapter 10: Population Trends", "Chapter 11: Migration Patterns", "Chapter 12: Labor Force"],
-                "foresight_task": "Forecast demographic shifts and their economic consequences."
+                "group_id": "GROUP_D",
+                "group_type": "Theoretical",
+                "chapter_numbers": [10, 11, 12],
+                "chapter_titles": ["Population Trends", "Migration Patterns", "Labor Force"],
+                "content_summary": "This group explores Greece's demographic landscape and its profound socio-economic implications, examining aging population trends, migration dynamics, and labor market transformations over the coming decades.",
+                "thematic_quadrants": ["Demographic Analysis", "Labor Economics", "Social Policy", "Migration Studies"],
+                "foresight_task": "Forecast demographic shifts and their economic consequences, including pension system sustainability, healthcare demand projections, labor force composition changes, and integration policy requirements."
             },
             {
-                "group_id": "GROUP_E_Infrastructure",
-                "description": "Examines Greece's physical infrastructure and its future planning needs.",
-                "chapters": ["Chapter 13: Transport Networks", "Chapter 14: Digital Infrastructure", "Chapter 15: Urban Planning"],
-                "foresight_task": "Evaluate infrastructure investment priorities and modernization pathways."
+                "group_id": "GROUP_E",
+                "group_type": "Thematic",
+                "chapter_numbers": [13, 14, 15],
+                "chapter_titles": ["Transport Networks", "Digital Infrastructure", "Urban Planning"],
+                "content_summary": "This group examines Greece's physical and digital infrastructure requirements, analyzing transport connectivity improvements, broadband expansion needs, and sustainable urban development planning challenges.",
+                "thematic_quadrants": ["Transport Policy", "Digital Transformation", "Urban Development", "Investment Planning"],
+                "foresight_task": "Evaluate infrastructure investment priorities and modernization pathways, considering EU funding opportunities, public-private partnership models, and integration with pan-European transport and digital networks."
             }
         ]
     }
@@ -932,9 +956,51 @@ def main():
     # Step 3: Analyze & Review
     elif current_step == 3:
 
+        # Generation Settings - show BEFORE analysis so user can configure first
+        # Only show if analysis hasn't been done yet
+        if not st.session_state.planning_data:
+            with st.expander("Generation Settings (Optional)", expanded=False):
+                st.caption("Customize how appendices are generated:")
 
-        # Step 3a: Analyze Book - horizontal layout
-        st.subheader("Analyze Book")
+                col_years, col_words = st.columns(2)
+
+                with col_years:
+                    st.markdown("**Forecast Horizon**")
+                    years_ahead = st.slider(
+                        "Years ahead",
+                        min_value=5,
+                        max_value=30,
+                        value=st.session_state.forecast_years,
+                        step=5,
+                        label_visibility="collapsed",
+                        help="How many years into the future should the appendix analyze?",
+                        key="forecast_years_slider_top"
+                    )
+                    st.session_state.forecast_years = years_ahead
+                    from datetime import datetime
+                    current_year = datetime.now().year
+                    target_year = current_year + years_ahead
+                    st.caption(f"Appendices will analyze trends up to {target_year}")
+
+                with col_words:
+                    st.markdown("**Target Word Count**")
+                    word_options = {
+                        "Short (1500-2000 words)": "1500-2000",
+                        "Standard (2500-3500 words)": "2500-3500",
+                        "Detailed (4000-5000 words)": "4000-5000"
+                    }
+                    current_options = list(word_options.keys())
+                    current_idx = current_options.index(st.session_state.word_count_option) if st.session_state.word_count_option in current_options else 1
+
+                    selected = st.radio(
+                        "Word count",
+                        options=current_options,
+                        index=current_idx,
+                        label_visibility="collapsed",
+                        key="word_count_radio_top"
+                    )
+                    st.session_state.word_count_option = selected
+                    st.session_state.word_count_value = word_options[selected]
 
         # Initialize analyzing state
         if 'analyzing' not in st.session_state:
@@ -1011,7 +1077,7 @@ def main():
 
             planning_data = st.session_state.planning_data
 
-            # Book Overview
+            # Book Overview - two columns for metadata, full width for scope
             overview = planning_data.get('book_overview', {})
             st.markdown("#### Book Overview")
 
@@ -1050,10 +1116,8 @@ def main():
                 content_summary = chapter.get('content_summary', 'N/A')
                 badge_class = get_type_badge_class(group_type)
 
-                # Enhanced expander label with badges
-                summary_preview = content_summary[:80] + '...' if len(content_summary) > 80 else content_summary
-
-                with st.expander(f"{group_id} — {summary_preview}", expanded=False):
+                # Use full summary in expander label (no truncation)
+                with st.expander(f"{group_id} — {content_summary}", expanded=False):
                     # Header with badges
                     st.markdown(f'''
                     <div class="chapter-card-header">
@@ -1150,8 +1214,52 @@ def main():
             else:
                 st.warning("⚠️ Planning data is incomplete. Cannot generate export files.")
 
-            # Bottom section: Changes (optional) then Proceed button
+            # Bottom section: Settings (can be adjusted), Changes (optional), then Proceed button
             st.divider()
+
+            # Generation Settings (collapsible) - allows adjustment before proceeding
+            with st.expander("Generation Settings (Adjust before proceeding)", expanded=False):
+                st.caption("You can still adjust these settings before generating appendices:")
+
+                col_years, col_words = st.columns(2)
+
+                with col_years:
+                    st.markdown("**Forecast Horizon**")
+                    years_ahead = st.slider(
+                        "Years ahead",
+                        min_value=5,
+                        max_value=30,
+                        value=st.session_state.forecast_years,
+                        step=5,
+                        label_visibility="collapsed",
+                        help="How many years into the future should the appendix analyze?",
+                        key="forecast_years_slider_bottom"
+                    )
+                    st.session_state.forecast_years = years_ahead
+                    from datetime import datetime
+                    current_year = datetime.now().year
+                    target_year = current_year + years_ahead
+                    st.caption(f"Appendices will analyze trends up to {target_year}")
+
+                with col_words:
+                    st.markdown("**Target Word Count**")
+                    word_options = {
+                        "Short (1500-2000 words)": "1500-2000",
+                        "Standard (2500-3500 words)": "2500-3500",
+                        "Detailed (4000-5000 words)": "4000-5000"
+                    }
+                    current_options = list(word_options.keys())
+                    current_idx = current_options.index(st.session_state.word_count_option) if st.session_state.word_count_option in current_options else 1
+
+                    selected = st.radio(
+                        "Word count",
+                        options=current_options,
+                        index=current_idx,
+                        label_visibility="collapsed",
+                        key="word_count_radio_bottom"
+                    )
+                    st.session_state.word_count_option = selected
+                    st.session_state.word_count_value = word_options[selected]
 
             # Collapsible Request Changes section (above proceed button)
             with st.expander("Need to make changes? (Optional)", expanded=False):
@@ -1362,7 +1470,7 @@ def main():
                             target_assignment=group_id,
                             chapter_info=chapter_info,
                             book_content=st.session_state.book_content,
-                            word_count="2500-3500"
+                            word_count=st.session_state.get('word_count_value', "2500-3500")
                         )
 
                         response = call_gemini(prompt, st.session_state.working_model)

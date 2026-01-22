@@ -1130,6 +1130,44 @@ button[kind="secondary"]:has(+ [data-testid="stMarkdownContainer"]),
     margin-bottom: 0 !important;
 }
 
+/* ============================================
+   STEP 4: Individual Download Button Colors
+   c1=Markdown, c2=Word, c3=PDF, c4=Regenerate
+   ============================================ */
+
+/* PDF Download Button (3rd column) - Red tones */
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"]:nth-child(3) [data-testid="stDownloadButton"] button {
+    background-color: #DC2626 !important;
+    color: white !important;
+    border: none !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"]:nth-child(3) [data-testid="stDownloadButton"] button:hover {
+    background-color: #B91C1C !important;
+}
+
+/* Word/DOCX Download Button (2nd column) - Microsoft Word blue */
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button {
+    background-color: #2B579A !important;
+    color: white !important;
+    border: none !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"]:nth-child(2) [data-testid="stDownloadButton"] button:hover {
+    background-color: #1E3F6F !important;
+}
+
+/* Markdown Download Button (1st column) - Dark gray */
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button {
+    background-color: #475569 !important;
+    color: white !important;
+    border: none !important;
+}
+
+[data-testid="stHorizontalBlock"]:has([data-testid="stDownloadButton"]) [data-testid="stColumn"]:nth-child(1) [data-testid="stDownloadButton"] button:hover {
+    background-color: #334155 !important;
+}
+
 /* Minimize vertical block wrapper spacing */
 [data-testid="stVerticalBlockBorderWrapper"] {
     padding-top: 0 !important;
@@ -1167,4 +1205,62 @@ button[kind="secondary"]:has(+ [data-testid="stMarkdownContainer"]),
 /* Reduce margin on all markdown headings in content area */
 [data-testid="stMarkdownContainer"] h1 {
     margin-top: 0.5rem !important;
+}
+
+/* ============================================
+   EXPANDER LABEL FULL WIDTH (Step 3)
+   ============================================ */
+
+/* Force expander and all its containers to be full width */
+[data-testid="stExpander"],
+[data-testid="stExpander"] > details,
+[data-testid="stExpander"] > details > summary {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* The summary uses flexbox - ensure text fills remaining space */
+[data-testid="stExpander"] > details > summary {
+    display: flex !important;
+    align-items: flex-start !important;
+}
+
+/* Target the text element (usually a p or span) - remove max-width constraints */
+[data-testid="stExpander"] > details > summary p,
+[data-testid="stExpander"] > details > summary span {
+    max-width: none !important;
+    flex: 1 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+}
+
+/* Override Streamlit's default p max-width inside expander headers */
+[data-testid="stExpander"] > details > summary [data-testid="stMarkdownContainer"] p {
+    max-width: none !important;
+}
+
+/* ============================================
+   DEBUG: Container Outlines (DISABLED)
+   Uncomment to debug layout issues
+   ============================================ */
+/*
+[data-testid="stVerticalBlock"] {
+    outline: 2px solid red !important;
+}
+[data-testid="stHorizontalBlock"] {
+    outline: 2px solid blue !important;
+}
+[data-testid="stColumn"] {
+    outline: 2px dashed green !important;
+}
+[data-testid="stMarkdownContainer"] {
+    outline: 1px dotted orange !important;
+}
+*/
+
+/* ============================================
+   FIX: Remove max-width constraints on text globally
+   ============================================ */
+[data-testid="stMarkdownContainer"] p {
+    max-width: none !important;
 }
