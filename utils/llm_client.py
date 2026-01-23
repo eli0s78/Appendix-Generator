@@ -11,11 +11,62 @@ import re
 
 # Module-level client storage
 _client: Optional[genai.Client] = None
+_detected_tier: Optional[str] = None  # "free" or "paid"
 
 
 def get_client() -> Optional[genai.Client]:
     """Get the current Gemini client."""
     return _client
+
+
+def get_detected_tier() -> Optional[str]:
+    """Get the detected API tier (free or paid)."""
+    return _detected_tier
+
+
+def detect_api_tier(api_key: str) -> str:
+    """
+    Detect whether the API key is on free or paid tier.
+    Tests by attempting to use a Pro model - if it fails with 'limit: 0'
+    or 'free_tier' in the error, it's a free tier key.
+
+    Returns: "paid" or "free"
+    """
+    global _detected_tier
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        # Try a Pro model with minimal request (latest first)
+        test_models = ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.0-pro"]
+
+        for model in test_models:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents="Hi"
+                )
+                if response and response.text:
+                    # Pro model worked - this is a paid tier key
+                    _detected_tier = "paid"
+                    return "paid"
+            except Exception as e:
+                error_str = str(e).lower()
+                # Check for free tier indicators
+                if "free_tier" in error_str or "limit: 0" in error_str or "limit\":0" in error_str:
+                    _detected_tier = "free"
+                    return "free"
+                # Other errors (like model not found) - continue to next model
+                continue
+
+        # If we get here, assume free tier (safer default)
+        _detected_tier = "free"
+        return "free"
+
+    except Exception:
+        # On any error, default to free tier for safety
+        _detected_tier = "free"
+        return "free"
 
 
 def configure_gemini(api_key: str) -> genai.Client:
@@ -53,45 +104,62 @@ def list_available_models(api_key: str) -> List[str]:
 
 def find_best_model(api_key: str) -> Tuple[str, str]:
     """
-    Find the best available Gemini model, prioritizing newer versions.
+    Find the best available Gemini model based on API tier.
+    Detects if key is free/paid tier and selects appropriate models.
     Returns tuple of (model_id, display_name)
     """
+    global _detected_tier
+
     try:
         client = genai.Client(api_key=api_key)
         available = []
-        
+
         for model in client.models.list():
             model_name = model.name if hasattr(model, 'name') else str(model)
             available.append(model_name)
     except Exception as e:
         return None, f"Cannot list models: {str(e)}"
-    
-    # Priority order - Gemini 3 Pro first, then Pro variants before Flash
+
+    # Detect API tier if not already detected
+    if _detected_tier is None:
+        detect_api_tier(api_key)
+
     # Model names from API are like "models/gemini-2.0-flash"
-    priority_patterns = [
-        ("gemini-3-pro", "Gemini 3 Pro"),
-        ("gemini-3.0-pro", "Gemini 3 Pro"),
-        ("gemini-2.5-pro", "Gemini 2.5 Pro"),
-        ("gemini-2.0-pro", "Gemini 2.0 Pro"),
-        ("gemini-2.5-flash", "Gemini 2.5 Flash"),
-        ("gemini-2.0-flash", "Gemini 2.0 Flash"),
-        ("gemini-1.5-pro", "Gemini 1.5 Pro"),
-        ("gemini-1.5-flash", "Gemini 1.5 Flash"),
-        ("gemini-pro", "Gemini Pro"),
-    ]
-    
+    if _detected_tier == "paid":
+        # Paid tier - can use Pro models (latest/best first)
+        priority_patterns = [
+            ("gemini-3-pro-preview", "Gemini 3 Pro Preview"),  # Latest & greatest
+            ("gemini-3-pro", "Gemini 3 Pro"),
+            ("gemini-2.5-pro", "Gemini 2.5 Pro"),
+            ("gemini-2.0-pro", "Gemini 2.0 Pro"),
+            ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+            ("gemini-2.0-flash", "Gemini 2.0 Flash"),
+            ("gemini-1.5-pro", "Gemini 1.5 Pro"),
+            ("gemini-1.5-flash", "Gemini 1.5 Flash"),
+        ]
+    else:
+        # Free tier - only Flash models work reliably
+        priority_patterns = [
+            ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+            ("gemini-2.0-flash", "Gemini 2.0 Flash"),
+            ("gemini-1.5-flash", "Gemini 1.5 Flash"),
+            ("gemini-1.5-pro", "Gemini 1.5 Pro"),  # May have limited free access
+            ("gemini-pro", "Gemini Pro"),
+        ]
+
     for pattern, display_name in priority_patterns:
         for model_name in available:
             if pattern in model_name.lower():
                 # Extract just the model ID (remove "models/" prefix)
                 model_id = model_name.replace("models/", "")
-                return model_id, f"{display_name} ({model_id})"
-    
+                tier_label = " [Paid]" if _detected_tier == "paid" else " [Free]"
+                return model_id, f"{display_name} ({model_id}){tier_label}"
+
     # If nothing matched, return first available
     if available:
         model_id = available[0].replace("models/", "")
         return model_id, f"Available model ({model_id})"
-    
+
     return None, "No models available"
 
 

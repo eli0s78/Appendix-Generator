@@ -70,7 +70,7 @@ if 'ready_to_generate' not in st.session_state:
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
 if 'working_model' not in st.session_state:
-    st.session_state.working_model = "gemini-2.5-pro-preview-05-06"
+    st.session_state.working_model = "gemini-2.5-flash"  # Use free tier model
 # Track saved state for unsaved changes detection
 if 'last_saved_state' not in st.session_state:
     st.session_state.last_saved_state = None
@@ -112,7 +112,7 @@ if STEP4_DEV_MODE and 'step4_dev_initialized' not in st.session_state:
     st.session_state.book_content = "Mock book content for Step 4 development testing."
     st.session_state.extraction_info = {'final_chars': 50000, 'pages': 200}
     st.session_state.ready_to_generate = True
-    st.session_state.working_model = "gemini-2.5-pro-preview-05-06"
+    st.session_state.working_model = "gemini-2.5-flash"  # Use free tier model
 
     # Mock planning data with realistic chapter groups (11 groups for tab testing)
     st.session_state.planning_data = {
@@ -244,7 +244,7 @@ if STEP3_DEV_MODE and 'step3_dev_initialized' not in st.session_state:
     st.session_state.api_key = "mock-api-key-for-dev"
     st.session_state.book_content = "Mock book content for Step 3 layout development testing."
     st.session_state.extraction_info = {'final_chars': 850000, 'pages': 350, 'was_truncated': False}
-    st.session_state.working_model = "gemini-3-pro-preview"
+    st.session_state.working_model = "gemini-2.5-flash"  # Use free tier model
 
     # Add mock extraction messages to test layout consistency
     st.session_state.extraction_messages = [
