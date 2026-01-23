@@ -8,6 +8,7 @@ from google.genai import types
 from typing import Tuple, List, Optional
 import json
 import re
+import threading
 
 # Module-level client storage
 _client: Optional[genai.Client] = None
@@ -27,46 +28,72 @@ def get_detected_tier() -> Optional[str]:
 def detect_api_tier(api_key: str) -> str:
     """
     Detect whether the API key is on free or paid tier.
-    Tests by attempting to use a Pro model - if it fails with 'limit: 0'
-    or 'free_tier' in the error, it's a free tier key.
+
+    Strategy: Try Pro model in a daemon thread with short timeout.
+    - Free tier keys fail INSTANTLY with quota error (limit: 0)
+    - Paid tier keys work (slowly, but don't fail quickly)
+
+    If Pro fails within 2 seconds with quota error → free tier
+    If Pro doesn't fail within 2 seconds → paid tier (it's working)
 
     Returns: "paid" or "free"
     """
     global _detected_tier
 
-    try:
-        client = genai.Client(api_key=api_key)
+    # Result container for thread communication
+    result = {"tier": None, "error": None, "done": False}
 
-        # Try a Pro model with minimal request (latest first)
-        test_models = ["gemini-3-pro-preview", "gemini-2.5-pro", "gemini-2.0-pro"]
+    def test_pro_model():
+        """Test Pro model - free tier fails instantly, paid tier works slowly."""
+        try:
+            client = genai.Client(api_key=api_key)
+            # Use a reliable Pro model name
+            client.models.generate_content(
+                model="gemini-2.5-pro",
+                contents="OK"
+            )
+            # If we get here, Pro worked - paid tier confirmed
+            result["tier"] = "paid"
+            result["done"] = True
+        except Exception as e:
+            error_str = str(e)
+            result["error"] = error_str
+            result["done"] = True
 
-        for model in test_models:
-            try:
-                response = client.models.generate_content(
-                    model=model,
-                    contents="Hi"
-                )
-                if response and response.text:
-                    # Pro model worked - this is a paid tier key
-                    _detected_tier = "paid"
-                    return "paid"
-            except Exception as e:
-                error_str = str(e).lower()
-                # Check for free tier indicators
-                if "free_tier" in error_str or "limit: 0" in error_str or "limit\":0" in error_str:
-                    _detected_tier = "free"
-                    return "free"
-                # Other errors (like model not found) - continue to next model
-                continue
+            # Check if it's a free tier quota error
+            error_lower = error_str.lower()
+            is_free_tier = any([
+                "free_tier" in error_lower,
+                "limit: 0" in error_str,
+                "limit\":0" in error_str,
+                "limit\": 0" in error_str,
+                ("resource_exhausted" in error_lower and "limit" in error_lower),
+                ("quota" in error_lower and "pro" in error_lower),
+            ])
 
-        # If we get here, assume free tier (safer default)
-        _detected_tier = "free"
-        return "free"
+            if is_free_tier:
+                result["tier"] = "free"
+            else:
+                # Other errors (404, network, etc.) - default to free for safety
+                # This ensures we don't falsely claim Pro access
+                result["tier"] = "free"
 
-    except Exception:
-        # On any error, default to free tier for safety
-        _detected_tier = "free"
-        return "free"
+    # Use daemon thread so it won't block app exit
+    thread = threading.Thread(target=test_pro_model, daemon=True)
+    thread.start()
+
+    # Wait up to 2 seconds for quick failure (free tier fails instantly)
+    thread.join(timeout=2.0)
+
+    # Check results
+    if result["done"] and result["tier"] is not None:
+        _detected_tier = result["tier"]
+        return result["tier"]
+
+    # Thread still running after 2 seconds means Pro call is in progress
+    # This indicates paid tier (Pro works, just takes time)
+    _detected_tier = "paid"
+    return "paid"
 
 
 def configure_gemini(api_key: str) -> genai.Client:
@@ -126,25 +153,20 @@ def find_best_model(api_key: str) -> Tuple[str, str]:
 
     # Model names from API are like "models/gemini-2.0-flash"
     if _detected_tier == "paid":
-        # Paid tier - can use Pro models (latest/best first)
+        # Paid tier - use Gemini 3 Pro (preview) first, then Flash fallbacks
         priority_patterns = [
-            ("gemini-3-pro-preview", "Gemini 3 Pro Preview"),  # Latest & greatest
-            ("gemini-3-pro", "Gemini 3 Pro"),
+            ("gemini-3-pro-preview", "Gemini 3 Pro Preview"),  # Best for paid users
             ("gemini-2.5-pro", "Gemini 2.5 Pro"),
-            ("gemini-2.0-pro", "Gemini 2.0 Pro"),
-            ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+            ("gemini-2.5-flash", "Gemini 2.5 Flash"),  # Fallback
             ("gemini-2.0-flash", "Gemini 2.0 Flash"),
-            ("gemini-1.5-pro", "Gemini 1.5 Pro"),
-            ("gemini-1.5-flash", "Gemini 1.5 Flash"),
         ]
     else:
-        # Free tier - only Flash models work reliably
+        # Free tier - only stable Flash models work reliably
+        # Preview models appear in list but may not be accessible
         priority_patterns = [
             ("gemini-2.5-flash", "Gemini 2.5 Flash"),
             ("gemini-2.0-flash", "Gemini 2.0 Flash"),
             ("gemini-1.5-flash", "Gemini 1.5 Flash"),
-            ("gemini-1.5-pro", "Gemini 1.5 Pro"),  # May have limited free access
-            ("gemini-pro", "Gemini Pro"),
         ]
 
     for pattern, display_name in priority_patterns:
@@ -163,20 +185,40 @@ def find_best_model(api_key: str) -> Tuple[str, str]:
     return None, "No models available"
 
 
+def _is_free_tier_error(error_str: str) -> bool:
+    """Check if an error indicates free tier quota limit."""
+    error_lower = error_str.lower()
+    return any([
+        "free_tier" in error_lower,
+        "limit: 0" in error_str,
+        "limit\":0" in error_str,
+        "limit\": 0" in error_str,
+        ("resource_exhausted" in error_lower and "limit" in error_lower),
+    ])
+
+
 def call_gemini(prompt: str, model_name: str = None, client: genai.Client = None) -> str:
     """
     Send a prompt to Gemini and get a response.
     Uses the global client if none is provided.
+
+    Includes automatic fallback: if a Pro model fails with quota errors
+    (indicating free tier), automatically retries with Flash model.
     """
+    global _detected_tier
+
     if client is None:
         client = _client
-    
+
     if client is None:
         raise Exception("Gemini client not configured. Please set your API key first.")
-    
+
     if model_name is None:
-        model_name = "gemini-2.0-flash"  # Safe fallback
-    
+        model_name = "gemini-2.5-flash"  # Use stable Flash as fallback
+
+    # Track if we should try fallback on Pro model failure
+    is_pro_model = "pro" in model_name.lower()
+
     try:
         response = client.models.generate_content(
             model=model_name,
@@ -186,11 +228,11 @@ def call_gemini(prompt: str, model_name: str = None, client: genai.Client = None
                 max_output_tokens=16384,
             )
         )
-        
+
         # Handle different response structures in new SDK
         if response is None:
             raise Exception("Empty response from AI")
-        
+
         # Try to get text from response
         if hasattr(response, 'text') and response.text:
             return response.text
@@ -200,12 +242,40 @@ def call_gemini(prompt: str, model_name: str = None, client: genai.Client = None
             if hasattr(candidate, 'content') and candidate.content:
                 if hasattr(candidate.content, 'parts') and candidate.content.parts:
                     return candidate.content.parts[0].text
-        
+
         # If we get here, try converting to string
         return str(response)
-        
+
     except Exception as e:
-        error_msg = str(e).lower()
+        error_str = str(e)
+        error_msg = error_str.lower()
+
+        # Check if this is a free tier error on a Pro model
+        # If so, update tier and retry with Flash
+        if is_pro_model and _is_free_tier_error(error_str):
+            _detected_tier = "free"  # Update tier for future calls
+            fallback_model = "gemini-2.5-flash"  # Use stable Flash
+            try:
+                response = client.models.generate_content(
+                    model=fallback_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        max_output_tokens=16384,
+                    )
+                )
+                if response and hasattr(response, 'text') and response.text:
+                    return response.text
+                elif hasattr(response, 'candidates') and response.candidates:
+                    candidate = response.candidates[0]
+                    if hasattr(candidate, 'content') and candidate.content:
+                        if hasattr(candidate.content, 'parts') and candidate.content.parts:
+                            return candidate.content.parts[0].text
+                return str(response)
+            except Exception as fallback_error:
+                raise Exception(f"⚠️ AI service error: {str(fallback_error)}\n\n💡 Try again in a moment.")
+
+        # Standard error handling
         if "quota" in error_msg or "rate" in error_msg:
             raise Exception("⚠️ API quota exceeded. Please wait a few minutes and try again, or check your API quota at https://aistudio.google.com/")
         elif "invalid" in error_msg and "key" in error_msg:
@@ -256,44 +326,64 @@ def parse_json_response(response: str) -> dict:
 
 def test_api_key(api_key: str) -> Tuple[bool, str]:
     """
-    Test if the API key is valid and find the best available model.
+    Test if the API key is valid.
+
+    IMPORTANT: Always validates with Flash model (fast for all tiers).
+    Pro model access is determined when actually generating content.
     """
+    global _detected_tier
+
     api_key = api_key.strip()
-    
+
     if not api_key:
         return False, "API key is empty"
-    
+
     if not api_key.startswith("AIza"):
         return False, "API key should start with 'AIza'. Please check you copied the full key from Google AI Studio."
-    
+
+    # Reset tier detection for new API key
+    _detected_tier = None
+
     try:
         # Create a client with the API key
         client = genai.Client(api_key=api_key)
-        
-        # Find the best model
-        model_id, model_display = find_best_model(api_key)
-        
-        if model_id is None:
-            # List what we found for debugging
-            available = list_available_models(api_key)
-            return False, f"No compatible models found. Available: {', '.join(available[:5])}"
-        
-        # Test the model with a simple generation
+
+        # ALWAYS validate with Flash model - fast for both free and paid tiers
+        # Pro model detection happens during actual generation
+        # Use stable Gemini 2.5 Flash (preview models may not be accessible)
+        validation_model = "gemini-2.5-flash"
+
         try:
             response = client.models.generate_content(
-                model=model_id,
+                model=validation_model,
                 contents="Say OK"
             )
             if response and response.text:
+                # Key is valid - now detect tier for display
+                # This sets _detected_tier to "paid" optimistically
+                detect_api_tier(api_key)
+
+                # Get the best model for display purposes
+                model_id, model_display = find_best_model(api_key)
+
                 return True, f"API key valid! Using: {model_display}"
         except Exception as e:
-            return False, f"Model {model_id} failed: {str(e)}"
-        
-        return False, "Could not validate any model"
-        
+            error_str = str(e)
+            error_lower = error_str.lower()
+
+            # Check if it's a quota/tier issue
+            if "quota" in error_lower or "resource_exhausted" in error_lower:
+                return False, "API quota exceeded. Please wait or check your usage limits."
+            elif "invalid" in error_lower and "key" in error_lower:
+                return False, "Invalid API key. Please get a new key from Google AI Studio."
+            else:
+                return False, f"Validation failed: {str(e)}"
+
+        return False, "Could not validate the API key"
+
     except Exception as e:
         error_msg = str(e).lower()
-        
+
         if "api_key" in error_msg or "invalid" in error_msg:
             return False, "Invalid API key. Please get a new key from Google AI Studio."
         elif "quota" in error_msg:

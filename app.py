@@ -22,6 +22,7 @@ from utils import (
     parse_json_response,
     test_api_key,
     get_working_model,
+    get_detected_tier,
     export_to_markdown,
     export_to_docx,
     export_to_pdf,
@@ -99,6 +100,7 @@ if DEVELOPER_MODE and 'developer_mode_initialized' not in st.session_state:
         st.session_state.api_key = env_api_key
         st.session_state.api_key_valid = True
         st.session_state.working_model = get_working_model(env_api_key)
+        st.session_state.detected_tier = get_detected_tier()  # Store tier in session
         configure_gemini(env_api_key)
         st.session_state.developer_mode_initialized = True
 
@@ -416,6 +418,8 @@ def execute_project_load(loaded_data: dict) -> bool:
         if success:
             st.session_state.api_key = api_key
             st.session_state.api_key_valid = True
+            st.session_state.working_model = get_working_model(api_key)
+            st.session_state.detected_tier = get_detected_tier()  # Store tier in session
             configure_gemini(api_key)
         else:
             st.session_state.api_key_invalid_on_load = True
@@ -606,7 +610,9 @@ def main():
         # === MODEL INFO (bottom) ===
         if st.session_state.api_key_valid and st.session_state.working_model:
             st.markdown("---")
-            st.caption(f"Model: {st.session_state.working_model}")
+            # Read tier from session state (persists across steps)
+            tier_label = st.session_state.get('detected_tier') or "unknown"
+            st.caption(f"Model: {st.session_state.working_model} | Tier: {tier_label}")
 
     # API Key Modal - shown when loaded session has invalid API key
     if st.session_state.get('api_key_invalid_on_load'):
@@ -621,6 +627,7 @@ def main():
                         st.session_state.api_key = new_key
                         st.session_state.api_key_valid = True
                         st.session_state.working_model = get_working_model(new_key)
+                        st.session_state.detected_tier = get_detected_tier()  # Store tier in session
                         configure_gemini(new_key)
                         del st.session_state['api_key_invalid_on_load']
                         st.rerun()
@@ -831,6 +838,7 @@ def main():
                 st.session_state.api_key_valid = True
                 st.session_state.api_key = api_key
                 st.session_state.working_model = get_working_model(api_key)
+                st.session_state.detected_tier = get_detected_tier()  # Store tier in session
                 configure_gemini(api_key)
                 st.rerun()
             else:
@@ -838,8 +846,8 @@ def main():
                 status_placeholder.empty()
                 st.markdown(f'<div class="error-box"><strong>Connection Failed</strong> – {message}<br><br><strong>Need help?</strong> Get your free API key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color: inherit; text-decoration: underline;">Google AI Studio</a></div>', unsafe_allow_html=True)
 
-        # Setup Guide (collapsed)
-        with st.expander("How to get a free API key", expanded=False):
+        # Setup Guide (expanded by default)
+        with st.expander("How to get an API key", expanded=True):
             st.markdown("""
             ### Quick Setup Guide:
 
@@ -849,9 +857,13 @@ def main():
             4. **Copy** the key (starts with "AIza...")
             5. **Paste** it above and click "Validate Key"
 
-            **Note:** The free tier includes generous limits - perfect for testing and moderate use.
+            ---
 
-            **Already have a key?** Paste it above to get started!
+            *Already have a key?* Paste it above to get started!
+
+            **Note:** Gemini 3 Pro (recommended model) needs a **paid tier API Key**. You need to have a Billing Linked Account with Google for the paid tier. The free credits in the paid plan are more than enough - you won't be charged.
+
+            *Want to use a free tier?* The application will use Gemini 2.5 Flash model.
             """)
 
     # Step 2: Upload Book
