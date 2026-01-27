@@ -923,39 +923,47 @@ def main():
                 try:
                     uploaded_file.seek(0)
 
-                    # Show animated spinner with message
-                    with status_placeholder:
-                        with st.spinner("Extracting text from your PDF..."):
-                            content, extraction_info = extract_with_info(uploaded_file)
+                    # Show spinner while extracting
+                    with st.spinner("Extracting text from your PDF..."):
+                        content, extraction_info = extract_with_info(uploaded_file)
 
                     st.session_state.book_content = content
                     st.session_state.extraction_info = extraction_info
 
                     # Store extraction messages to show on Step 3
                     messages = []
-                    
+
                     # Bibliography removal info
                     if extraction_info.get('bibliography_removed', False):
                         bib_saved = extraction_info.get('bibliography_chars_saved', 0)
                         messages.append(f"📚 Bibliography/References section removed ({bib_saved:,} chars saved)")
-                    
+
                     # Index removal info
                     if extraction_info.get('index_removed', False):
                         idx_saved = extraction_info.get('index_chars_saved', 0)
                         messages.append(f"📖 Index section removed ({idx_saved:,} chars saved)")
-                    
+
                     # Truncation warning
                     if extraction_info.get('was_truncated', False):
                         messages.append(f"⚠️ Book was large ({extraction_info['original_chars']:,} chars). Kept {extraction_info['kept_percentage']}% (beginning + end). Some middle content was omitted.")
-                    
+
                     if messages:
                         st.session_state.extraction_messages = messages
 
                     # Auto-advance to Step 3
                     st.rerun()
 
+                except MemoryError:
+                    status_placeholder.error("⚠️ This PDF is too large to process. Please try a smaller file (under 50MB) or a PDF with fewer pages.")
                 except Exception as e:
-                    status_placeholder.error(f"Error extracting text: {str(e)}")
+                    error_msg = str(e)
+                    # Provide user-friendly error messages
+                    if "password" in error_msg.lower() or "encrypted" in error_msg.lower():
+                        status_placeholder.error("🔒 This PDF is password-protected. Please use an unprotected PDF.")
+                    elif "corrupt" in error_msg.lower() or "invalid" in error_msg.lower():
+                        status_placeholder.error("⚠️ This PDF appears to be corrupted or invalid. Please try a different file.")
+                    else:
+                        status_placeholder.error(f"⚠️ Could not extract text from this PDF. Please try a different file.\n\nDetails: {error_msg}")
 
     # Step 3: Analyze & Review
     elif current_step == 3:
@@ -1523,4 +1531,18 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # Top-level error handler to prevent app-wide crashes
+        st.error(f"""
+        **An unexpected error occurred.**
+
+        Please refresh the page to try again. If the problem persists,
+        try clearing your browser cache or using a different browser.
+
+        Error details: {str(e)}
+        """)
+        # Log the error for debugging (visible in Streamlit Cloud logs)
+        import traceback
+        print(f"CRITICAL ERROR: {traceback.format_exc()}")
