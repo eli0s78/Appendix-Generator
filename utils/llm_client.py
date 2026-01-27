@@ -362,8 +362,8 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
 
                 # Select model based on tier
                 if detected == "paid":
-                    model_name = "Gemini 2.5 Pro"
-                    model_id = "gemini-2.5-pro"
+                    model_name = "Gemini 3 Pro (Preview)"
+                    model_id = "gemini-3-pro-preview"
                 else:
                     model_name = "Gemini 2.5 Flash"
                     model_id = "gemini-2.5-flash"
@@ -405,6 +405,6 @@ def get_working_model(api_key: str) -> str:
 
     # Use cached tier if available
     if _detected_tier == "paid":
-        return "gemini-2.5-pro"
+        return "gemini-3-pro-preview"
     else:
         return "gemini-2.5-flash"
