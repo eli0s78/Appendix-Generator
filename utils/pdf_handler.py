@@ -244,13 +244,14 @@ def detect_and_remove_index(content: str) -> Tuple[str, dict]:
     return content, removal_info
 
 
-def truncate_content_smart(content: str, max_chars: int = 1800000) -> Tuple[str, dict]:
+def truncate_content_smart(content: str, max_chars: int = 1000000) -> Tuple[str, dict]:
     """
     Smart truncation that preserves beginning and end of the book.
     This ensures we capture both the table of contents (usually at the start)
     and the later chapters (at the end).
-    
-    Increased limit to 1.8M chars to support Gemini 2.x's larger context window.
+
+    Limit: 1M chars (~250K tokens) balances analysis quality with memory usage
+    for multi-user environments like Streamlit Cloud.
     
     Args:
         content: The text content
@@ -304,7 +305,7 @@ def truncate_content_smart(content: str, max_chars: int = 1800000) -> Tuple[str,
     return truncated, truncation_info
 
 
-def truncate_content(content: str, max_chars: int = 1800000) -> str:
+def truncate_content(content: str, max_chars: int = 1000000) -> str:
     """
     Wrapper for backward compatibility.
     Uses smart truncation internally.
