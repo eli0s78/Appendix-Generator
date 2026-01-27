@@ -99,7 +99,7 @@ if DEVELOPER_MODE and 'developer_mode_initialized' not in st.session_state:
     if env_api_key and env_api_key != 'your-api-key-here':
         st.session_state.api_key = env_api_key
         st.session_state.api_key_valid = True
-        st.session_state.working_model = get_working_model(env_api_key)
+        st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
         st.session_state.detected_tier = get_detected_tier()  # Store tier in session
         configure_gemini(env_api_key)
         st.session_state.developer_mode_initialized = True
@@ -418,7 +418,7 @@ def execute_project_load(loaded_data: dict) -> bool:
         if success:
             st.session_state.api_key = api_key
             st.session_state.api_key_valid = True
-            st.session_state.working_model = get_working_model(api_key)
+            st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
             st.session_state.detected_tier = get_detected_tier()  # Store tier in session
             configure_gemini(api_key)
         else:
@@ -626,7 +626,7 @@ def main():
                     if success:
                         st.session_state.api_key = new_key
                         st.session_state.api_key_valid = True
-                        st.session_state.working_model = get_working_model(new_key)
+                        st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
                         st.session_state.detected_tier = get_detected_tier()  # Store tier in session
                         configure_gemini(new_key)
                         del st.session_state['api_key_invalid_on_load']
@@ -837,7 +837,7 @@ def main():
             if success:
                 st.session_state.api_key_valid = True
                 st.session_state.api_key = api_key
-                st.session_state.working_model = get_working_model(api_key)
+                st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
                 st.session_state.detected_tier = get_detected_tier()  # Store tier in session
                 configure_gemini(api_key)
                 st.rerun()
@@ -1071,7 +1071,7 @@ def main():
             try:
                 configure_gemini(st.session_state.api_key)
                 prompt = get_analysis_prompt(st.session_state.book_content)
-                response = call_gemini(prompt, st.session_state.working_model)
+                response = call_gemini(prompt, st.session_state.working_model, api_key=st.session_state.api_key)
                 planning_data = parse_json_response(response)
                 st.session_state.planning_data = planning_data
                 st.session_state.analyzing = False
@@ -1307,7 +1307,7 @@ def main():
                         Return ONLY the JSON object.
                         """
 
-                        response = call_gemini(change_prompt, st.session_state.working_model)
+                        response = call_gemini(change_prompt, st.session_state.working_model, api_key=st.session_state.api_key)
                         updated_data = parse_json_response(response)
                         st.session_state.planning_data = updated_data
 
@@ -1495,7 +1495,7 @@ def main():
                             word_count=st.session_state.get('word_count_value', "2500-3500")
                         )
 
-                        response = call_gemini(prompt, st.session_state.working_model)
+                        response = call_gemini(prompt, st.session_state.working_model, api_key=st.session_state.api_key)
                         st.session_state.generated_appendices[group_id] = response
                         st.rerun()
 

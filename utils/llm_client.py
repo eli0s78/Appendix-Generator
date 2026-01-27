@@ -1,6 +1,10 @@
 """
 LLM Client - Handles communication with Google Gemini API.
 Uses the new google-genai SDK with Client object pattern.
+
+IMPORTANT: This module is STATELESS to support multiple concurrent users.
+Each function creates its own client using the provided API key.
+Tier detection results should be stored in Streamlit session_state, not here.
 """
 
 from google import genai
@@ -10,19 +14,14 @@ import json
 import re
 import threading
 
-# Module-level client storage
-_client: Optional[genai.Client] = None
-_detected_tier: Optional[str] = None  # "free" or "paid"
-
-
-def get_client() -> Optional[genai.Client]:
-    """Get the current Gemini client."""
-    return _client
-
 
 def get_detected_tier() -> Optional[str]:
-    """Get the detected API tier (free or paid)."""
-    return _detected_tier
+    """
+    DEPRECATED: Tier should be stored in session_state, not globally.
+    This function exists for backward compatibility but always returns None.
+    Use st.session_state.detected_tier instead.
+    """
+    return None
 
 
 def detect_api_tier(api_key: str) -> str:
@@ -37,9 +36,9 @@ def detect_api_tier(api_key: str) -> str:
     If Pro doesn't fail within 2 seconds → paid tier (it's working)
 
     Returns: "paid" or "free"
-    """
-    global _detected_tier
 
+    NOTE: Result should be stored in session_state by the caller.
+    """
     # Result container for thread communication
     result = {"tier": None, "error": None, "done": False}
 
@@ -75,7 +74,6 @@ def detect_api_tier(api_key: str) -> str:
                 result["tier"] = "free"
             else:
                 # Other errors (404, network, etc.) - default to free for safety
-                # This ensures we don't falsely claim Pro access
                 result["tier"] = "free"
 
     # Use daemon thread so it won't block app exit
@@ -87,24 +85,23 @@ def detect_api_tier(api_key: str) -> str:
 
     # Check results
     if result["done"] and result["tier"] is not None:
-        _detected_tier = result["tier"]
         return result["tier"]
 
     # Thread still running after 2 seconds means Pro call is in progress
     # This indicates paid tier (Pro works, just takes time)
-    _detected_tier = "paid"
     return "paid"
 
 
 def configure_gemini(api_key: str) -> genai.Client:
     """
-    Configure the Gemini API with the provided key.
+    Create a Gemini client with the provided key.
     Returns a Client object for making API calls.
+
+    NOTE: This creates a NEW client each time. For multi-user support,
+    each user's API key should be stored in session_state.
     """
-    global _client
     try:
-        _client = genai.Client(api_key=api_key)
-        return _client
+        return genai.Client(api_key=api_key)
     except Exception as e:
         raise Exception(f"Failed to configure Gemini API: {str(e)}")
 
@@ -197,21 +194,25 @@ def _is_free_tier_error(error_str: str) -> bool:
     ])
 
 
-def call_gemini(prompt: str, model_name: str = None, client: genai.Client = None) -> str:
+def call_gemini(prompt: str, model_name: str = None, api_key: str = None, client: genai.Client = None) -> str:
     """
     Send a prompt to Gemini and get a response.
-    Uses the global client if none is provided.
+
+    Args:
+        prompt: The prompt to send
+        model_name: Model to use (default: gemini-2.5-flash)
+        api_key: API key to create a fresh client (recommended for multi-user)
+        client: Pre-created client (legacy, not recommended)
 
     Includes automatic fallback: if a Pro model fails with quota errors
     (indicating free tier), automatically retries with Flash model.
     """
-    global _detected_tier
+    # Create a fresh client for this request if api_key provided
+    if api_key:
+        client = genai.Client(api_key=api_key)
 
     if client is None:
-        client = _client
-
-    if client is None:
-        raise Exception("Gemini client not configured. Please set your API key first.")
+        raise Exception("Gemini client not configured. Please provide an API key.")
 
     if model_name is None:
         model_name = "gemini-2.5-flash"  # Use stable Flash as fallback
@@ -251,9 +252,8 @@ def call_gemini(prompt: str, model_name: str = None, client: genai.Client = None
         error_msg = error_str.lower()
 
         # Check if this is a free tier error on a Pro model
-        # If so, update tier and retry with Flash
+        # If so, retry with Flash model
         if is_pro_model and _is_free_tier_error(error_str):
-            _detected_tier = "free"  # Update tier for future calls
             fallback_model = "gemini-2.5-flash"  # Use stable Flash
             try:
                 response = client.models.generate_content(
@@ -395,16 +395,17 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
             return False, f"Error: {str(e)}"
 
 
-def get_working_model(api_key: str) -> str:
+def get_working_model(api_key: str = None, tier: str = None) -> str:
     """
-    Get the best working model ID based on detected tier.
+    Get the best working model ID based on tier.
 
-    Uses cached tier detection - no additional API calls.
+    Args:
+        api_key: Unused, kept for backward compatibility
+        tier: "paid" or "free" - should be passed from session_state
+
+    Returns model ID based on tier.
     """
-    global _detected_tier
-
-    # Use cached tier if available
-    if _detected_tier == "paid":
+    if tier == "paid":
         return "gemini-3-pro-preview"
     else:
         return "gemini-2.5-flash"

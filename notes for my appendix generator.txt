@@ -1,0 +1,10 @@
+notes for my appendix generator
+1) Fix the Title-Header:
+-it is not centered in regards to the page and the other elements.
+-There is too much empty space above it.
+-The font size is too big
+-The title should be "Appendix Generator"
+2) The configuration sidepanel also has too much empty space above it.
+
+
+This tab must be intelligently spit verticaly in two columns. The left column will contain the general analysis information and the right column will present
