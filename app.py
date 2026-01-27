@@ -10,8 +10,12 @@ import json
 import os
 import re
 import zipfile
+import gc
 from io import BytesIO
 from dotenv import load_dotenv
+
+# Force garbage collection on every app run to help free memory from old sessions
+gc.collect()
 from prompts import get_analysis_prompt, get_generation_prompt
 from utils import (
     get_pdf_info,

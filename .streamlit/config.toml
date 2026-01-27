@@ -12,9 +12,10 @@ headless = true
 enableCORS = false
 enableXsrfProtection = true
 maxUploadSize = 200
-# Reduce disconnected session TTL to free memory faster after page reloads
-# Default is ~10-15 minutes; we use 60 seconds to prevent memory buildup
-disconnectedSessionTTL = 60
+# Aggressive memory cleanup: clean up disconnected sessions after 10 seconds
+# Default is ~10-15 minutes. Users who accidentally close tab have 10s to reopen.
+# This prevents memory buildup from reload cycles (load book → save → reload → repeat)
+disconnectedSessionTTL = 10
 
 [browser]
 gatherUsageStats = false
