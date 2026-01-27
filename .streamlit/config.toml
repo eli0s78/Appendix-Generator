@@ -12,10 +12,10 @@ headless = true
 enableCORS = false
 enableXsrfProtection = true
 maxUploadSize = 200
-# Aggressive memory cleanup: clean up disconnected sessions after 1 second
-# Default is ~10-15 minutes. With 1s TTL, page refresh = fresh session (as intended).
+# Aggressive memory cleanup: clean up disconnected sessions after 5 seconds
+# Default is ~10-15 minutes. With 5s TTL, page refresh = fresh session (as intended).
 # This prevents memory buildup from reload cycles (load book → save → reload → repeat)
-disconnectedSessionTTL = 1
+disconnectedSessionTTL = 5
 
 [browser]
 gatherUsageStats = false
