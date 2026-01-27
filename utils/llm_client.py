@@ -326,10 +326,10 @@ def parse_json_response(response: str) -> dict:
 
 def test_api_key(api_key: str) -> Tuple[bool, str]:
     """
-    Test if the API key is valid.
+    Test if the API key is valid and detect tier.
 
-    OPTIMIZED: Only makes 1 API call for validation.
-    Tier detection is deferred to first actual generation to save API quota.
+    OPTIMIZED: Makes 2 API calls total (validation + tier detection).
+    Previously made 3-4 calls. Tier detection runs in background thread.
     """
     global _detected_tier
 
@@ -348,8 +348,7 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
         # Create a client with the API key
         client = genai.Client(api_key=api_key)
 
-        # ONLY validate with one simple call - no tier detection or model listing
-        # This saves 2-3 API calls per validation
+        # Validate with Flash model (works for all tiers)
         validation_model = "gemini-2.5-flash"
 
         try:
@@ -358,10 +357,19 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
                 contents="OK"
             )
             if response and response.text:
-                # Key is valid - assume free tier by default
-                # Tier will be detected on first actual generation if needed
-                _detected_tier = "free"
-                return True, f"API key valid! Using: Gemini 2.5 Flash"
+                # Key is valid - now detect tier (runs in background, quick for paid tier)
+                detected = detect_api_tier(api_key)
+
+                # Select model based on tier
+                if detected == "paid":
+                    model_name = "Gemini 2.5 Pro"
+                    model_id = "gemini-2.5-pro"
+                else:
+                    model_name = "Gemini 2.5 Flash"
+                    model_id = "gemini-2.5-flash"
+
+                tier_label = "Paid" if detected == "paid" else "Free"
+                return True, f"API key valid! Using: {model_name} [{tier_label}]"
         except Exception as e:
             error_str = str(e)
             error_lower = error_str.lower()
@@ -389,11 +397,14 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
 
 def get_working_model(api_key: str) -> str:
     """
-    Get the best working model ID.
+    Get the best working model ID based on detected tier.
 
-    OPTIMIZED: Returns Flash model directly without API calls.
-    Tier-based model selection happens during actual generation if needed.
+    Uses cached tier detection - no additional API calls.
     """
-    # Default to Flash model - works for both free and paid tiers
-    # This avoids extra API calls for model listing
-    return "gemini-2.5-flash"
+    global _detected_tier
+
+    # Use cached tier if available
+    if _detected_tier == "paid":
+        return "gemini-2.5-pro"
+    else:
+        return "gemini-2.5-flash"
