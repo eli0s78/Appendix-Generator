@@ -1,4 +1,4 @@
-from .pdf_handler import extract_text_from_pdf, get_pdf_info, truncate_content, truncate_content_smart, extract_with_info, validate_pdf_file
+from .pdf_handler import extract_text_from_pdf, get_pdf_info, truncate_content, truncate_content_smart, extract_with_info, validate_pdf_file, ExtractionBusyError
 from .llm_client import configure_gemini, call_gemini, parse_json_response, test_api_key, get_working_model, list_available_models, find_best_model, detect_api_tier
 from .export import (
     export_to_markdown,
@@ -22,6 +22,7 @@ __all__ = [
     'truncate_content_smart',
     'extract_with_info',
     'validate_pdf_file',
+    'ExtractionBusyError',
     'configure_gemini',
     'call_gemini',
     'parse_json_response',

@@ -2,12 +2,21 @@
 PDF Handler - Extracts text content from uploaded PDF files.
 Optimized for large academic books (100-600+ pages).
 Includes smart filtering of bibliography and index sections.
+
+THREAD SAFETY: Uses a processing lock to prevent concurrent extractions
+from crashing Streamlit Cloud (which runs all users in one process).
 """
 
 import pdfplumber
 from typing import Tuple
 import io
 import re
+import threading
+
+# Global lock for PDF processing - prevents memory exhaustion from concurrent extractions
+# This is intentionally global because it coordinates between all users in the same process
+_extraction_lock = threading.Lock()
+_EXTRACTION_TIMEOUT = 120  # 2 minutes max wait time
 
 
 def validate_pdf_file(pdf_file) -> Tuple[bool, str]:
@@ -303,55 +312,79 @@ def truncate_content(content: str, max_chars: int = 1800000) -> str:
     return truncated
 
 
+class ExtractionBusyError(Exception):
+    """Raised when the system is busy processing another PDF."""
+    pass
+
+
 def extract_with_info(pdf_file) -> Tuple[str, dict]:
     """
     Extract text from PDF with smart filtering and return both content and extraction info.
-    
+
     Processing pipeline:
-    1. Extract full text from PDF
-    2. Remove bibliography/references sections (not needed for appendix)
-    3. Remove index sections (not needed for appendix)
-    4. Apply smart truncation if still over limit
-    
+    1. Acquire processing lock (prevents concurrent extractions from crashing)
+    2. Extract full text from PDF
+    3. Remove bibliography/references sections (not needed for appendix)
+    4. Remove index sections (not needed for appendix)
+    5. Apply smart truncation if still over limit
+
     Args:
         pdf_file: Uploaded file object from Streamlit
-        
+
     Returns:
         Tuple of (text_content, extraction_info)
+
+    Raises:
+        ExtractionBusyError: If another extraction is in progress and timeout exceeded
     """
-    pdf_file.seek(0)
-    
-    # Get PDF info first
-    pdf_info = get_pdf_info(pdf_file)
-    pdf_file.seek(0)
-    
-    # Extract full text
-    full_text = extract_text_from_pdf(pdf_file)
-    original_chars = len(full_text)
-    
-    # Step 1: Remove bibliography/references sections
-    cleaned_text, bib_info = detect_and_remove_bibliography(full_text)
-    
-    # Step 2: Remove index sections
-    cleaned_text, index_info = detect_and_remove_index(cleaned_text)
-    
-    # Step 3: Apply smart truncation if still needed
-    truncated_text, truncation_info = truncate_content_smart(cleaned_text)
-    
-    # Calculate total savings from filtering
-    total_filtered_chars = bib_info["bibliography_chars_saved"] + index_info["index_chars_saved"]
-    
-    # Combine all info
-    extraction_info = {
-        **pdf_info,
-        **truncation_info,
-        "original_chars_before_filtering": original_chars,
-        "bibliography_removed": bib_info["bibliography_removed"],
-        "bibliography_chars_saved": bib_info["bibliography_chars_saved"],
-        "index_removed": index_info["index_removed"],
-        "index_chars_saved": index_info["index_chars_saved"],
-        "total_filtered_chars": total_filtered_chars,
-        "sections_removed": bib_info.get("sections_found", [])
-    }
-    
-    return truncated_text, extraction_info
+    # Try to acquire the extraction lock with timeout
+    # This prevents memory exhaustion from concurrent PDF processing
+    lock_acquired = _extraction_lock.acquire(timeout=_EXTRACTION_TIMEOUT)
+
+    if not lock_acquired:
+        raise ExtractionBusyError(
+            "The system is currently processing another book. "
+            "Please wait a moment and try again."
+        )
+
+    try:
+        pdf_file.seek(0)
+
+        # Get PDF info first
+        pdf_info = get_pdf_info(pdf_file)
+        pdf_file.seek(0)
+
+        # Extract full text
+        full_text = extract_text_from_pdf(pdf_file)
+        original_chars = len(full_text)
+
+        # Step 1: Remove bibliography/references sections
+        cleaned_text, bib_info = detect_and_remove_bibliography(full_text)
+
+        # Step 2: Remove index sections
+        cleaned_text, index_info = detect_and_remove_index(cleaned_text)
+
+        # Step 3: Apply smart truncation if still needed
+        truncated_text, truncation_info = truncate_content_smart(cleaned_text)
+
+        # Calculate total savings from filtering
+        total_filtered_chars = bib_info["bibliography_chars_saved"] + index_info["index_chars_saved"]
+
+        # Combine all info
+        extraction_info = {
+            **pdf_info,
+            **truncation_info,
+            "original_chars_before_filtering": original_chars,
+            "bibliography_removed": bib_info["bibliography_removed"],
+            "bibliography_chars_saved": bib_info["bibliography_chars_saved"],
+            "index_removed": index_info["index_removed"],
+            "index_chars_saved": index_info["index_chars_saved"],
+            "total_filtered_chars": total_filtered_chars,
+            "sections_removed": bib_info.get("sections_found", [])
+        }
+
+        return truncated_text, extraction_info
+
+    finally:
+        # Always release the lock, even if an error occurred
+        _extraction_lock.release()

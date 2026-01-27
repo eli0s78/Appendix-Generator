@@ -126,14 +126,19 @@ def list_available_models(api_key: str) -> List[str]:
         return [f"Error listing models: {str(e)}"]
 
 
-def find_best_model(api_key: str) -> Tuple[str, str]:
+def find_best_model(api_key: str, tier: str = None) -> Tuple[str, str]:
     """
     Find the best available Gemini model based on API tier.
-    Detects if key is free/paid tier and selects appropriate models.
+    Selects appropriate models based on tier.
     Returns tuple of (model_id, display_name)
-    """
-    global _detected_tier
 
+    Args:
+        api_key: Google API key
+        tier: "paid" or "free" - should be passed from session_state
+
+    NOTE: This function is kept for backward compatibility but is not used
+    by the main app. Use get_working_model() instead for simpler model selection.
+    """
     try:
         client = genai.Client(api_key=api_key)
         available = []
@@ -144,12 +149,8 @@ def find_best_model(api_key: str) -> Tuple[str, str]:
     except Exception as e:
         return None, f"Cannot list models: {str(e)}"
 
-    # Detect API tier if not already detected
-    if _detected_tier is None:
-        detect_api_tier(api_key)
-
     # Model names from API are like "models/gemini-2.0-flash"
-    if _detected_tier == "paid":
+    if tier == "paid":
         # Paid tier - use Gemini 3 Pro (preview) first, then Flash fallbacks
         priority_patterns = [
             ("gemini-3-pro-preview", "Gemini 3 Pro Preview"),  # Best for paid users
@@ -171,7 +172,7 @@ def find_best_model(api_key: str) -> Tuple[str, str]:
             if pattern in model_name.lower():
                 # Extract just the model ID (remove "models/" prefix)
                 model_id = model_name.replace("models/", "")
-                tier_label = " [Paid]" if _detected_tier == "paid" else " [Free]"
+                tier_label = " [Paid]" if tier == "paid" else " [Free]"
                 return model_id, f"{display_name} ({model_id}){tier_label}"
 
     # If nothing matched, return first available

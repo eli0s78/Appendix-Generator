@@ -17,6 +17,7 @@ from utils import (
     get_pdf_info,
     extract_with_info,
     validate_pdf_file,
+    ExtractionBusyError,
     configure_gemini,
     call_gemini,
     parse_json_response,
@@ -953,6 +954,8 @@ def main():
 
                 except MemoryError:
                     status_placeholder.error("⚠️ This PDF is too large to process. Please try a smaller file (under 50MB) or a PDF with fewer pages.")
+                except ExtractionBusyError:
+                    status_placeholder.warning("⏳ Another user is currently processing a book. Please wait a moment and try again.")
                 except Exception as e:
                     error_msg = str(e)
                     # Provide user-friendly error messages
