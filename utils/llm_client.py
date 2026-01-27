@@ -324,25 +324,27 @@ def parse_json_response(response: str) -> dict:
             raise Exception(f"⚠️ Unexpected response format from AI.\n\n💡 The AI returned data in an unexpected format. Please try again - this usually resolves itself on retry.\n\nDebug (first 500 chars): {preview}")
 
 
-def test_api_key(api_key: str) -> Tuple[bool, str]:
+def test_api_key(api_key: str) -> Tuple[bool, str, Optional[str]]:
     """
     Test if the API key is valid and detect tier.
 
     OPTIMIZED: Makes 2 API calls total (validation + tier detection).
-    Previously made 3-4 calls. Tier detection runs in background thread.
-    """
-    global _detected_tier
 
+    Returns:
+        Tuple of (success, message, detected_tier)
+        - success: True if API key is valid
+        - message: Status message for display
+        - detected_tier: "paid" or "free" (None if validation failed)
+
+    The caller should store detected_tier in session_state for multi-user support.
+    """
     api_key = api_key.strip()
 
     if not api_key:
-        return False, "API key is empty"
+        return False, "API key is empty", None
 
     if not api_key.startswith("AIza"):
-        return False, "API key should start with 'AIza'. Please check you copied the full key from Google AI Studio."
-
-    # Reset tier detection for new API key
-    _detected_tier = None
+        return False, "API key should start with 'AIza'. Please check you copied the full key from Google AI Studio.", None
 
     try:
         # Create a client with the API key
@@ -363,36 +365,34 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
                 # Select model based on tier
                 if detected == "paid":
                     model_name = "Gemini 3 Pro (Preview)"
-                    model_id = "gemini-3-pro-preview"
                 else:
                     model_name = "Gemini 2.5 Flash"
-                    model_id = "gemini-2.5-flash"
 
                 tier_label = "Paid" if detected == "paid" else "Free"
-                return True, f"API key valid! Using: {model_name} [{tier_label}]"
+                return True, f"API key valid! Using: {model_name} [{tier_label}]", detected
         except Exception as e:
             error_str = str(e)
             error_lower = error_str.lower()
 
             # Check if it's a quota/tier issue
             if "quota" in error_lower or "resource_exhausted" in error_lower:
-                return False, "API quota exceeded. Please wait or check your usage limits."
+                return False, "API quota exceeded. Please wait or check your usage limits.", None
             elif "invalid" in error_lower and "key" in error_lower:
-                return False, "Invalid API key. Please get a new key from Google AI Studio."
+                return False, "Invalid API key. Please get a new key from Google AI Studio.", None
             else:
-                return False, f"Validation failed: {str(e)}"
+                return False, f"Validation failed: {str(e)}", None
 
-        return False, "Could not validate the API key"
+        return False, "Could not validate the API key", None
 
     except Exception as e:
         error_msg = str(e).lower()
 
         if "api_key" in error_msg or "invalid" in error_msg:
-            return False, "Invalid API key. Please get a new key from Google AI Studio."
+            return False, "Invalid API key. Please get a new key from Google AI Studio.", None
         elif "quota" in error_msg:
-            return False, "API quota exceeded. Please wait or check your usage limits."
+            return False, "API quota exceeded. Please wait or check your usage limits.", None
         else:
-            return False, f"Error: {str(e)}"
+            return False, f"Error: {str(e)}", None
 
 
 def get_working_model(api_key: str = None, tier: str = None) -> str:

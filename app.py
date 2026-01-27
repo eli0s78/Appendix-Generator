@@ -22,7 +22,6 @@ from utils import (
     parse_json_response,
     test_api_key,
     get_working_model,
-    get_detected_tier,
     export_to_markdown,
     export_to_docx,
     export_to_pdf,
@@ -97,11 +96,13 @@ DEVELOPER_MODE = os.getenv('DEVELOPER_MODE', 'false').lower() == 'true'
 if DEVELOPER_MODE and 'developer_mode_initialized' not in st.session_state:
     env_api_key = os.getenv('GOOGLE_API_KEY', '')
     if env_api_key and env_api_key != 'your-api-key-here':
-        st.session_state.api_key = env_api_key
-        st.session_state.api_key_valid = True
-        st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
-        st.session_state.detected_tier = get_detected_tier()  # Store tier in session
-        configure_gemini(env_api_key)
+        # Validate and detect tier for developer mode
+        success, _, detected_tier = test_api_key(env_api_key)
+        if success:
+            st.session_state.api_key = env_api_key
+            st.session_state.api_key_valid = True
+            st.session_state.detected_tier = detected_tier
+            st.session_state.working_model = get_working_model(tier=detected_tier)
         st.session_state.developer_mode_initialized = True
 
 # Step 4 Dev Mode: Skip directly to Step 4 with mock data
@@ -414,13 +415,12 @@ def execute_project_load(loaded_data: dict) -> bool:
     # Restore and validate API key
     api_key = decode_api_key(loaded_data.get("api_key_encoded"))
     if api_key:
-        success, _ = test_api_key(api_key)
+        success, _, detected_tier = test_api_key(api_key)
         if success:
             st.session_state.api_key = api_key
             st.session_state.api_key_valid = True
-            st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
-            st.session_state.detected_tier = get_detected_tier()  # Store tier in session
-            configure_gemini(api_key)
+            st.session_state.detected_tier = detected_tier  # Store tier FIRST
+            st.session_state.working_model = get_working_model(tier=detected_tier)
         else:
             st.session_state.api_key_invalid_on_load = True
             st.session_state.api_key_valid = False
@@ -622,13 +622,12 @@ def main():
             new_key = st.text_input("Google AI Studio API Key", type="password", key="modal_api_key")
             if st.button("Validate & Continue", type="primary", key="modal_validate"):
                 if new_key:
-                    success, msg = test_api_key(new_key)
+                    success, msg, detected_tier = test_api_key(new_key)
                     if success:
                         st.session_state.api_key = new_key
                         st.session_state.api_key_valid = True
-                        st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
-                        st.session_state.detected_tier = get_detected_tier()  # Store tier in session
-                        configure_gemini(new_key)
+                        st.session_state.detected_tier = detected_tier  # Store tier FIRST
+                        st.session_state.working_model = get_working_model(tier=detected_tier)
                         del st.session_state['api_key_invalid_on_load']
                         st.rerun()
                     else:
@@ -832,14 +831,13 @@ def main():
         if validate_clicked:
             status_placeholder.markdown('<div class="progress-message" style="margin: 0; padding: 0.5rem;">Validating...</div>', unsafe_allow_html=True)
 
-            success, message = test_api_key(api_key)
+            success, message, detected_tier = test_api_key(api_key)
 
             if success:
                 st.session_state.api_key_valid = True
                 st.session_state.api_key = api_key
-                st.session_state.working_model = get_working_model(tier=st.session_state.get('detected_tier'))
-                st.session_state.detected_tier = get_detected_tier()  # Store tier in session
-                configure_gemini(api_key)
+                st.session_state.detected_tier = detected_tier  # Store tier FIRST
+                st.session_state.working_model = get_working_model(tier=detected_tier)
                 st.rerun()
             else:
                 st.session_state.api_key_valid = False
