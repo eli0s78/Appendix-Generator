@@ -12,6 +12,9 @@ headless = true
 enableCORS = false
 enableXsrfProtection = true
 maxUploadSize = 200
+# Reduce disconnected session TTL to free memory faster after page reloads
+# Default is ~10-15 minutes; we use 60 seconds to prevent memory buildup
+disconnectedSessionTTL = 60
 
 [browser]
 gatherUsageStats = false
