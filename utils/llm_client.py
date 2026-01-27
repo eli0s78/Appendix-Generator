@@ -328,8 +328,8 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
     """
     Test if the API key is valid.
 
-    IMPORTANT: Always validates with Flash model (fast for all tiers).
-    Pro model access is determined when actually generating content.
+    OPTIMIZED: Only makes 1 API call for validation.
+    Tier detection is deferred to first actual generation to save API quota.
     """
     global _detected_tier
 
@@ -348,25 +348,20 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
         # Create a client with the API key
         client = genai.Client(api_key=api_key)
 
-        # ALWAYS validate with Flash model - fast for both free and paid tiers
-        # Pro model detection happens during actual generation
-        # Use stable Gemini 2.5 Flash (preview models may not be accessible)
+        # ONLY validate with one simple call - no tier detection or model listing
+        # This saves 2-3 API calls per validation
         validation_model = "gemini-2.5-flash"
 
         try:
             response = client.models.generate_content(
                 model=validation_model,
-                contents="Say OK"
+                contents="OK"
             )
             if response and response.text:
-                # Key is valid - now detect tier for display
-                # This sets _detected_tier to "paid" optimistically
-                detect_api_tier(api_key)
-
-                # Get the best model for display purposes
-                model_id, model_display = find_best_model(api_key)
-
-                return True, f"API key valid! Using: {model_display}"
+                # Key is valid - assume free tier by default
+                # Tier will be detected on first actual generation if needed
+                _detected_tier = "free"
+                return True, f"API key valid! Using: Gemini 2.5 Flash"
         except Exception as e:
             error_str = str(e)
             error_lower = error_str.lower()
@@ -395,6 +390,10 @@ def test_api_key(api_key: str) -> Tuple[bool, str]:
 def get_working_model(api_key: str) -> str:
     """
     Get the best working model ID.
+
+    OPTIMIZED: Returns Flash model directly without API calls.
+    Tier-based model selection happens during actual generation if needed.
     """
-    model_id, _ = find_best_model(api_key)
-    return model_id if model_id else "gemini-2.0-flash"
+    # Default to Flash model - works for both free and paid tiers
+    # This avoids extra API calls for model listing
+    return "gemini-2.5-flash"
