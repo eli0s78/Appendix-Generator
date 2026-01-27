@@ -12,7 +12,6 @@ from google.genai import types
 from typing import Tuple, List, Optional
 import json
 import re
-import threading
 
 
 def get_detected_tier() -> Optional[str]:
@@ -28,68 +27,43 @@ def detect_api_tier(api_key: str) -> str:
     """
     Detect whether the API key is on free or paid tier.
 
-    Strategy: Try Pro model in a daemon thread with short timeout.
+    Strategy: Try Pro model directly (synchronous, no threads).
     - Free tier keys fail INSTANTLY with quota error (limit: 0)
-    - Paid tier keys work (slowly, but don't fail quickly)
-
-    If Pro fails within 2 seconds with quota error → free tier
-    If Pro doesn't fail within 2 seconds → paid tier (it's working)
+    - Paid tier keys succeed (may take a few seconds)
 
     Returns: "paid" or "free"
 
     NOTE: Result should be stored in session_state by the caller.
+    NOTE: This is now synchronous to avoid daemon thread instability.
     """
-    # Result container for thread communication
-    result = {"tier": None, "error": None, "done": False}
+    try:
+        client = genai.Client(api_key=api_key)
+        # Use Pro model - free tier fails instantly, paid tier works
+        client.models.generate_content(
+            model="gemini-2.5-pro",
+            contents="OK"
+        )
+        # If we get here, Pro worked - paid tier confirmed
+        return "paid"
+    except Exception as e:
+        error_str = str(e)
+        error_lower = error_str.lower()
 
-    def test_pro_model():
-        """Test Pro model - free tier fails instantly, paid tier works slowly."""
-        try:
-            client = genai.Client(api_key=api_key)
-            # Use a reliable Pro model name
-            client.models.generate_content(
-                model="gemini-2.5-pro",
-                contents="OK"
-            )
-            # If we get here, Pro worked - paid tier confirmed
-            result["tier"] = "paid"
-            result["done"] = True
-        except Exception as e:
-            error_str = str(e)
-            result["error"] = error_str
-            result["done"] = True
+        # Check if it's a free tier quota error
+        is_free_tier = any([
+            "free_tier" in error_lower,
+            "limit: 0" in error_str,
+            "limit\":0" in error_str,
+            "limit\": 0" in error_str,
+            ("resource_exhausted" in error_lower and "limit" in error_lower),
+            ("quota" in error_lower and "pro" in error_lower),
+        ])
 
-            # Check if it's a free tier quota error
-            error_lower = error_str.lower()
-            is_free_tier = any([
-                "free_tier" in error_lower,
-                "limit: 0" in error_str,
-                "limit\":0" in error_str,
-                "limit\": 0" in error_str,
-                ("resource_exhausted" in error_lower and "limit" in error_lower),
-                ("quota" in error_lower and "pro" in error_lower),
-            ])
-
-            if is_free_tier:
-                result["tier"] = "free"
-            else:
-                # Other errors (404, network, etc.) - default to free for safety
-                result["tier"] = "free"
-
-    # Use daemon thread so it won't block app exit
-    thread = threading.Thread(target=test_pro_model, daemon=True)
-    thread.start()
-
-    # Wait up to 2 seconds for quick failure (free tier fails instantly)
-    thread.join(timeout=2.0)
-
-    # Check results
-    if result["done"] and result["tier"] is not None:
-        return result["tier"]
-
-    # Thread still running after 2 seconds means Pro call is in progress
-    # This indicates paid tier (Pro works, just takes time)
-    return "paid"
+        if is_free_tier:
+            return "free"
+        else:
+            # Other errors (404, network, etc.) - default to free for safety
+            return "free"
 
 
 def configure_gemini(api_key: str) -> genai.Client:

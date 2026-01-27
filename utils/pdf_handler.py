@@ -12,6 +12,7 @@ from typing import Tuple
 import io
 import re
 import threading
+import gc
 
 # Global lock for PDF processing - prevents memory exhaustion from concurrent extractions
 # This is intentionally global because it coordinates between all users in the same process
@@ -360,12 +361,18 @@ def extract_with_info(pdf_file) -> Tuple[str, dict]:
 
         # Step 1: Remove bibliography/references sections
         cleaned_text, bib_info = detect_and_remove_bibliography(full_text)
+        # Free memory from full_text as we now have cleaned_text
+        del full_text
+        gc.collect()
 
         # Step 2: Remove index sections
         cleaned_text, index_info = detect_and_remove_index(cleaned_text)
 
         # Step 3: Apply smart truncation if still needed
         truncated_text, truncation_info = truncate_content_smart(cleaned_text)
+        # Free memory from cleaned_text as we now have truncated_text
+        del cleaned_text
+        gc.collect()
 
         # Calculate total savings from filtering
         total_filtered_chars = bib_info["bibliography_chars_saved"] + index_info["index_chars_saved"]
@@ -388,3 +395,5 @@ def extract_with_info(pdf_file) -> Tuple[str, dict]:
     finally:
         # Always release the lock, even if an error occurred
         _extraction_lock.release()
+        # Force garbage collection to free memory for other users
+        gc.collect()
