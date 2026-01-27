@@ -363,7 +363,7 @@ def mark_as_saved():
 
 
 def clear_project_state():
-    """Clear all project-related session state."""
+    """Clear all project-related session state and free memory."""
     keys_to_clear = [
         'book_content', 'extraction_info', 'planning_data',
         'generated_appendices', 'ready_to_generate', 'last_saved_state',
@@ -379,6 +379,9 @@ def clear_project_state():
     st.session_state.generated_appendices = {}
     st.session_state.ready_to_generate = False
     st.session_state.last_saved_state = None
+
+    # Force garbage collection to free memory from deleted objects
+    gc.collect()
 
 
 def clear_pending_state():
@@ -396,6 +399,30 @@ def clear_pending_state():
             del st.session_state[key]
 
 
+def clear_session_memory():
+    """
+    Explicitly clear all large data from session state and force garbage collection.
+
+    Call this BEFORE loading new data to ensure old project memory is freed.
+    This is critical for multi-user environments where memory is shared.
+    """
+    # List of keys that hold large data objects
+    large_data_keys = [
+        'book_content',      # Can be 1MB+ of text
+        'planning_data',     # Analysis results
+        'generated_appendices',  # Generated content
+        'extraction_info',   # Metadata (small but clear anyway)
+    ]
+
+    # Explicitly delete large objects to remove references
+    for key in large_data_keys:
+        if key in st.session_state and st.session_state[key] is not None:
+            del st.session_state[key]
+
+    # Force garbage collection to free the memory immediately
+    gc.collect()
+
+
 def execute_project_load(loaded_data: dict) -> bool:
     """
     Apply loaded project data to session state.
@@ -406,6 +433,10 @@ def execute_project_load(loaded_data: dict) -> bool:
     Returns:
         True if load succeeded, False if API key is invalid (modal will show)
     """
+    # CRITICAL: Clear old project memory BEFORE loading new data
+    # This prevents memory accumulation when loading multiple projects
+    clear_session_memory()
+
     # Restore project data
     st.session_state.book_content = loaded_data.get("book_content")
     st.session_state.extraction_info = loaded_data.get("extraction_info")
