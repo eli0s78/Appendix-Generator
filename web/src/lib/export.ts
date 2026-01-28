@@ -160,7 +160,7 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
         children.push(
           new Paragraph({
             children: parseInlineFormatting(match[2]),
-            bullet: { level },
+            numbering: { reference: 'bullet-list', level },
           })
         );
       }
@@ -170,7 +170,7 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
       children.push(
         new Paragraph({
           children: parseInlineFormatting(line.slice(2)),
-          bullet: { level: 0 },
+          numbering: { reference: 'bullet-list', level: 0 },
         })
       );
     }
@@ -237,11 +237,21 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
         {
           reference: 'default-numbering',
           levels: [
-            { level: 0, format: 'decimal', text: '%1.', alignment: 'start' },
-            { level: 1, format: 'lowerLetter', text: '%2.', alignment: 'start' },
-            { level: 2, format: 'lowerRoman', text: '%3.', alignment: 'start' },
-            { level: 3, format: 'decimal', text: '%4.', alignment: 'start' },
-            { level: 4, format: 'lowerLetter', text: '%5.', alignment: 'start' },
+            { level: 0, format: 'decimal', text: '%1.', alignment: 'start', style: { paragraph: { indent: { left: 360, hanging: 360 } } } },
+            { level: 1, format: 'lowerLetter', text: '%2.', alignment: 'start', style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+            { level: 2, format: 'lowerRoman', text: '%3.', alignment: 'start', style: { paragraph: { indent: { left: 1080, hanging: 360 } } } },
+            { level: 3, format: 'decimal', text: '%4.', alignment: 'start', style: { paragraph: { indent: { left: 1440, hanging: 360 } } } },
+            { level: 4, format: 'lowerLetter', text: '%5.', alignment: 'start', style: { paragraph: { indent: { left: 1800, hanging: 360 } } } },
+          ],
+        },
+        {
+          reference: 'bullet-list',
+          levels: [
+            { level: 0, format: 'bullet', text: '\u2022', alignment: 'start', style: { paragraph: { indent: { left: 360, hanging: 360 } } } }, // • bullet
+            { level: 1, format: 'bullet', text: '\u25E6', alignment: 'start', style: { paragraph: { indent: { left: 720, hanging: 360 } } } }, // ◦ white bullet
+            { level: 2, format: 'bullet', text: '\u2013', alignment: 'start', style: { paragraph: { indent: { left: 1080, hanging: 360 } } } }, // – en dash
+            { level: 3, format: 'bullet', text: '\u2022', alignment: 'start', style: { paragraph: { indent: { left: 1440, hanging: 360 } } } }, // • bullet
+            { level: 4, format: 'bullet', text: '\u25E6', alignment: 'start', style: { paragraph: { indent: { left: 1800, hanging: 360 } } } }, // ◦ white bullet
           ],
         },
       ],
@@ -954,8 +964,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
         const indent = Math.min(Math.floor(match[1].replace(/\t/g, '    ').length / 4), 3) * 8;
         const text = stripMarkdownFormatting(match[2]);
         const textLines = doc.splitTextToSize(text, contentWidth - 12 - indent);
-        // Use hyphen for nested bullet (Unicode chars not supported in default font)
-        doc.text('-', margin + indent, yPos);
+        // Use 'o' for nested bullet (looks like hollow circle, Unicode not supported)
+        doc.text('o', margin + indent, yPos);
         doc.text(textLines, margin + indent + 5, yPos);
         yPos += textLines.length * 5 + 2;
       }
@@ -1098,6 +1108,19 @@ function stripMarkdownFormatting(text: string): string {
     .replace(/\^(.+?)\^/g, '$1')           // Superscript ^text^
     .replace(/~(.+?)~/g, '$1')             // Subscript ~text~
     .replace(/`(.+?)`/g, '$1')             // Inline code
-    .replace(/\[(.+?)\]\(.+?\)/g, '$1');   // Links [text](url)
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')    // Links [text](url)
+    // Replace Unicode symbols that don't render in PDF's Helvetica font
+    .replace(/↓/g, 'v')                    // Down arrow
+    .replace(/→/g, '->')                   // Right arrow
+    .replace(/←/g, '<-')                   // Left arrow
+    .replace(/↑/g, '^')                    // Up arrow
+    .replace(/⬛/g, '*')                    // Black square
+    .replace(/◦/g, 'o')                    // White bullet
+    .replace(/◆/g, '*')                    // Diamond
+    .replace(/◇/g, 'o')                    // White diamond
+    .replace(/▶/g, '>')                    // Right triangle
+    .replace(/◀/g, '<')                    // Left triangle
+    .replace(/★/g, '*')                    // Star
+    .replace(/☆/g, '*');                   // White star
 }
 
