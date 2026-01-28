@@ -250,7 +250,7 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
         {
           reference: 'bullet-list',
           levels: [
-            // Level 0: Filled circle (Word default) - Symbol font character
+            // Level 0: Filled circle (Word default) - Symbol font bullet
             {
               level: 0,
               format: LevelFormat.BULLET,
@@ -261,18 +261,18 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
                 run: { font: 'Symbol' },
               },
             },
-            // Level 1: Hollow circle - Symbol font character
+            // Level 1: Hollow circle - Courier New 'o' (Word's actual default)
             {
               level: 1,
               format: LevelFormat.BULLET,
-              text: '\uF06F',
+              text: 'o',
               alignment: AlignmentType.START,
               style: {
                 paragraph: { indent: { left: 1080, hanging: 360 } },
-                run: { font: 'Symbol' },
+                run: { font: 'Courier New' },
               },
             },
-            // Level 2: Filled square - Symbol font character
+            // Level 2: Filled square - Wingdings character
             {
               level: 2,
               format: LevelFormat.BULLET,
@@ -280,7 +280,7 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
               alignment: AlignmentType.START,
               style: {
                 paragraph: { indent: { left: 1440, hanging: 360 } },
-                run: { font: 'Symbol' },
+                run: { font: 'Wingdings' },
               },
             },
             // Level 3: Filled circle (repeats pattern)
@@ -298,11 +298,11 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
             {
               level: 4,
               format: LevelFormat.BULLET,
-              text: '\uF06F',
+              text: 'o',
               alignment: AlignmentType.START,
               style: {
                 paragraph: { indent: { left: 2160, hanging: 360 } },
-                run: { font: 'Symbol' },
+                run: { font: 'Courier New' },
               },
             },
           ],
@@ -1038,8 +1038,9 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
         const indent = Math.min(Math.floor(match[1].replace(/\t/g, '    ').length / 4), 3) * 8;
         const text = stripMarkdownFormatting(match[2], areFontsLoaded());
         const textLines = doc.splitTextToSize(text, contentWidth - 12 - indent);
-        // Use hollow circle for nested bullet (Noto Sans supports this)
-        doc.text('○', margin + indent, yPos);
+        // Use hollow circle for nested bullet (fallback to 'o' for Helvetica)
+        const nestedBullet = areFontsLoaded() ? '○' : 'o';
+        doc.text(nestedBullet, margin + indent, yPos);
         doc.text(textLines, margin + indent + 5, yPos);
         yPos += textLines.length * 5 + 2;
       }
@@ -1052,7 +1053,9 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       doc.setFont(fontName, 'normal');
       const text = stripMarkdownFormatting(trimmedLine.slice(2), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth - 10);
-      doc.text('●', margin, yPos);
+      // Use filled circle for bullet (fallback to standard bullet for Helvetica)
+      const bullet = areFontsLoaded() ? '●' : '\u2022';
+      doc.text(bullet, margin, yPos);
       doc.text(textLines, margin + 8, yPos);
       yPos += textLines.length * 5 + 2;
     }
