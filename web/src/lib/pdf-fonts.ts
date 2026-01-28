@@ -112,6 +112,7 @@ async function loadFonts(): Promise<void> {
 
 /**
  * Ensure fonts are loaded (call this before creating PDFs)
+ * Returns silently if fonts fail to load - fallback to standard fonts
  */
 export async function ensureFontsLoaded(): Promise<void> {
   if (fontsRegistered) {
@@ -119,7 +120,11 @@ export async function ensureFontsLoaded(): Promise<void> {
   }
 
   if (!fontLoadPromise) {
-    fontLoadPromise = loadFonts();
+    fontLoadPromise = loadFonts().catch((error) => {
+      console.warn('Failed to load PDF fonts, using fallback:', error);
+      fontsRegistered = false;
+      fontLoadPromise = null;
+    });
   }
 
   await fontLoadPromise;

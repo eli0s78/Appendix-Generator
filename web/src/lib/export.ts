@@ -158,8 +158,8 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
       const match = line.match(/^(\s+)[-*] (.*)$/);
       if (match) {
         const indent = match[1].replace(/\t/g, '    ').length;
-        // Use 4 spaces per level (standard markdown nesting)
-        const level = Math.min(Math.floor(indent / 4), 3) + 1; // Level 1-4 for nested
+        // Calculate level: 1-4 spaces = level 1, 5-8 = level 2, etc.
+        const level = Math.max(1, Math.min(Math.ceil(indent / 4), 4));
         children.push(
           new Paragraph({
             children: parseInlineFormatting(match[2]),
@@ -182,8 +182,8 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
       const match = line.match(/^(\s+)\d+\. (.*)$/);
       if (match) {
         const indent = match[1].replace(/\t/g, '    ').length;
-        // Use 4 spaces per level (standard markdown nesting)
-        const level = Math.min(Math.floor(indent / 4), 3) + 1; // Level 1-4 for nested
+        // Calculate level: 1-4 spaces = level 1, 5-8 = level 2, etc.
+        const level = Math.max(1, Math.min(Math.ceil(indent / 4), 4));
         children.push(
           new Paragraph({
             children: parseInlineFormatting(match[2]),
@@ -1053,8 +1053,8 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       doc.setFont(fontName, 'normal');
       const text = stripMarkdownFormatting(trimmedLine.slice(2), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth - 10);
-      // Use filled circle for bullet (fallback to standard bullet for Helvetica)
-      const bullet = areFontsLoaded() ? '●' : '\u2022';
+      // Use filled circle for bullet (fallback to hyphen for Helvetica - ASCII safe)
+      const bullet = areFontsLoaded() ? '●' : '-';
       doc.text(bullet, margin, yPos);
       doc.text(textLines, margin + 8, yPos);
       yPos += textLines.length * 5 + 2;
@@ -1173,9 +1173,10 @@ function renderPdfTable(
 /**
  * Strip markdown formatting for plain text (used in PDF)
  * @param text - The text to strip formatting from
- * @param unicodeFontLoaded - If true, keep Unicode symbols (Noto Sans supports them)
+ * @param _unicodeFontLoaded - Unused, kept for API compatibility
  */
-function stripMarkdownFormatting(text: string, unicodeFontLoaded: boolean = true): string {
+function stripMarkdownFormatting(text: string, _unicodeFontLoaded: boolean = true): string {
+  // Strip markdown formatting
   let result = text
     .replace(/\*\*\*(.+?)\*\*\*/g, '$1')  // Bold+Italic ***text***
     .replace(/___(.+?)___/g, '$1')         // Bold+Italic ___text___
@@ -1191,22 +1192,21 @@ function stripMarkdownFormatting(text: string, unicodeFontLoaded: boolean = true
     .replace(/`(.+?)`/g, '$1')             // Inline code
     .replace(/\[(.+?)\]\(.+?\)/g, '$1');   // Links [text](url)
 
-  // Only replace Unicode symbols if font doesn't support them
-  if (!unicodeFontLoaded) {
-    result = result
-      .replace(/↓/g, 'v')                    // Down arrow
-      .replace(/→/g, '->')                   // Right arrow
-      .replace(/←/g, '<-')                   // Left arrow
-      .replace(/↑/g, '^')                    // Up arrow
-      .replace(/⬛/g, '*')                    // Black square
-      .replace(/◦/g, 'o')                    // White bullet
-      .replace(/◆/g, '*')                    // Diamond
-      .replace(/◇/g, 'o')                    // White diamond
-      .replace(/▶/g, '>')                    // Right triangle
-      .replace(/◀/g, '<')                    // Left triangle
-      .replace(/★/g, '*')                    // Star
-      .replace(/☆/g, '*');                   // White star
-  }
+  // Always replace Unicode symbols with ASCII equivalents for PDF reliability
+  // Even with custom fonts, these characters can be unreliable in PDF rendering
+  result = result
+    .replace(/↓/g, 'v')                    // Down arrow
+    .replace(/→/g, '->')                   // Right arrow
+    .replace(/←/g, '<-')                   // Left arrow
+    .replace(/↑/g, '^')                    // Up arrow
+    .replace(/⬛/g, '*')                    // Black square
+    .replace(/◦/g, 'o')                    // White bullet
+    .replace(/◆/g, '*')                    // Diamond
+    .replace(/◇/g, 'o')                    // White diamond
+    .replace(/▶/g, '>')                    // Right triangle
+    .replace(/◀/g, '<')                    // Left triangle
+    .replace(/★/g, '*')                    // Star
+    .replace(/☆/g, '*');                   // White star
 
   return result;
 }
