@@ -2,11 +2,12 @@
  * Export utilities for generating downloadable files
  */
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, AlignmentType, LevelFormat } from 'docx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { ensureFontsLoaded, registerFonts, areFontsLoaded } from './pdf-fonts';
 
 /**
  * Export content as Markdown file
@@ -50,10 +51,12 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
             children: rowCells.map((cellText) =>
               new TableCell({
                 width: { size: Math.floor(100 / rowCells.length), type: WidthType.PERCENTAGE },
+                verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
                     children: rowIndex === 0 && tableHeaders.length > 0
-                      ? [new TextRun({ text: cellText, bold: true })]
+                      // Strip markdown formatting from headers before applying bold
+                      ? [new TextRun({ text: cellText.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1'), bold: true })]
                       : parseInlineFormatting(cellText),
                   }),
                 ],
@@ -247,11 +250,61 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
         {
           reference: 'bullet-list',
           levels: [
-            { level: 0, format: 'bullet', text: '\u2022', alignment: 'start', style: { paragraph: { indent: { left: 360, hanging: 360 } } } }, // • bullet
-            { level: 1, format: 'bullet', text: '\u25E6', alignment: 'start', style: { paragraph: { indent: { left: 720, hanging: 360 } } } }, // ◦ white bullet
-            { level: 2, format: 'bullet', text: '\u2013', alignment: 'start', style: { paragraph: { indent: { left: 1080, hanging: 360 } } } }, // – en dash
-            { level: 3, format: 'bullet', text: '\u2022', alignment: 'start', style: { paragraph: { indent: { left: 1440, hanging: 360 } } } }, // • bullet
-            { level: 4, format: 'bullet', text: '\u25E6', alignment: 'start', style: { paragraph: { indent: { left: 1800, hanging: 360 } } } }, // ◦ white bullet
+            // Level 0: Filled circle (Word default) - Symbol font character
+            {
+              level: 0,
+              format: LevelFormat.BULLET,
+              text: '\uF0B7',
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 720, hanging: 360 } },
+                run: { font: 'Symbol' },
+              },
+            },
+            // Level 1: Hollow circle - Symbol font character
+            {
+              level: 1,
+              format: LevelFormat.BULLET,
+              text: '\uF06F',
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 1080, hanging: 360 } },
+                run: { font: 'Symbol' },
+              },
+            },
+            // Level 2: Filled square - Symbol font character
+            {
+              level: 2,
+              format: LevelFormat.BULLET,
+              text: '\uF0A7',
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 1440, hanging: 360 } },
+                run: { font: 'Symbol' },
+              },
+            },
+            // Level 3: Filled circle (repeats pattern)
+            {
+              level: 3,
+              format: LevelFormat.BULLET,
+              text: '\uF0B7',
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 1800, hanging: 360 } },
+                run: { font: 'Symbol' },
+              },
+            },
+            // Level 4: Hollow circle
+            {
+              level: 4,
+              format: LevelFormat.BULLET,
+              text: '\uF06F',
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: 2160, hanging: 360 } },
+                run: { font: 'Symbol' },
+              },
+            },
           ],
         },
       ],
@@ -646,8 +699,18 @@ export async function exportPlanningTableToDocx(planningData: PlanningDataExport
 /**
  * Export planning table as PDF (direct download)
  */
-export function exportPlanningTableToPdf(planningData: PlanningDataExport): void {
+export async function exportPlanningTableToPdf(planningData: PlanningDataExport): Promise<void> {
+  // Load Unicode fonts
+  await ensureFontsLoaded();
+
   const doc = new jsPDF();
+
+  // Register custom fonts for Unicode support
+  if (areFontsLoaded()) {
+    registerFonts(doc);
+  }
+
+  const fontName = areFontsLoaded() ? 'NotoSans' : 'helvetica';
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   const contentWidth = pageWidth - margin * 2;
@@ -669,7 +732,7 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
   // Title
   doc.setFontSize(20);
   doc.setTextColor(...darkColor);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontName, 'bold');
   doc.text('Foresight Planning Table', margin, yPos);
   yPos += 10;
 
@@ -688,7 +751,7 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
   // Book Overview Section
   doc.setFontSize(14);
   doc.setTextColor(...darkColor);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontName, 'bold');
   doc.text('Book Overview', margin, yPos);
   yPos += 8;
 
@@ -710,6 +773,7 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
     styles: {
       fontSize: 10,
       cellPadding: 4,
+      font: fontName,
     },
     theme: 'grid',
   });
@@ -720,7 +784,7 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
   checkPageBreak(20);
   doc.setFontSize(14);
   doc.setTextColor(...darkColor);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont(fontName, 'bold');
   doc.text(`Chapter Groups (${planningData.chapters?.length || 0})`, margin, yPos);
   yPos += 10;
 
@@ -733,12 +797,12 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
     doc.roundedRect(margin, yPos - 4, 25, 7, 1, 1, 'F');
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontName, 'bold');
     doc.text(group.group_id, margin + 2, yPos);
 
     doc.setFontSize(11);
     doc.setTextColor(...darkColor);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontName, 'bold');
     const titleText = group.chapter_titles?.join(', ') || '';
     const titleLines = doc.splitTextToSize(titleText, contentWidth - 30);
     doc.text(titleLines, margin + 28, yPos);
@@ -746,19 +810,19 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
 
     // Chapters
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontName, 'bold');
     doc.setTextColor(...grayColor);
     doc.text('Chapters:', margin, yPos);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontName, 'normal');
     doc.text(group.chapter_numbers?.join(', ') || '', margin + 25, yPos);
     yPos += 6;
 
     // Summary
     checkPageBreak(20);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontName, 'bold');
     doc.text('Summary:', margin, yPos);
     yPos += 5;
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontName, 'normal');
     doc.setTextColor(60, 60, 60);
     const summaryLines = doc.splitTextToSize(group.content_summary, contentWidth);
     doc.text(summaryLines, margin, yPos);
@@ -767,11 +831,11 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
     // Thematic Quadrants
     if (group.thematic_quadrants && group.thematic_quadrants.length > 0) {
       checkPageBreak(15);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fontName, 'bold');
       doc.setTextColor(...grayColor);
       doc.text('Thematic Quadrants:', margin, yPos);
       yPos += 5;
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fontName, 'normal');
       doc.setTextColor(60, 60, 60);
       const quadrantsText = group.thematic_quadrants.join(' • ');
       const quadrantLines = doc.splitTextToSize(quadrantsText, contentWidth);
@@ -781,13 +845,13 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
 
     // Foresight Task
     checkPageBreak(25);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontName, 'bold');
     doc.setTextColor(...grayColor);
     doc.text('Foresight Task:', margin, yPos);
     yPos += 5;
 
     // Task box
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontName, 'normal');
     doc.setTextColor(40, 40, 40);
     const taskLines = doc.splitTextToSize(group.foresight_task, contentWidth - 10);
     const taskHeight = taskLines.length * 5 + 8;
@@ -818,11 +882,11 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
 
     doc.setFontSize(12);
     doc.setTextColor(...darkColor);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fontName, 'bold');
     doc.text('Implementation Notes', margin + 5, yPos + 8);
 
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fontName, 'normal');
     doc.setTextColor(80, 60, 0);
     doc.text(notesLines, margin + 5, yPos + 16);
   }
@@ -835,8 +899,18 @@ export function exportPlanningTableToPdf(planningData: PlanningDataExport): void
 /**
  * Export appendix content as PDF (direct download)
  */
-export function exportAppendixToPdf(content: string, title: string): void {
+export async function exportAppendixToPdf(content: string, title: string): Promise<void> {
+  // Load Unicode fonts
+  await ensureFontsLoaded();
+
   const doc = new jsPDF();
+
+  // Register custom fonts for Unicode support
+  if (areFontsLoaded()) {
+    registerFonts(doc);
+  }
+
+  const fontName = areFontsLoaded() ? 'NotoSans' : 'helvetica';
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
@@ -892,9 +966,9 @@ export function exportAppendixToPdf(content: string, title: string): void {
 
       if (!inTable) {
         inTable = true;
-        tableHeaders = cells.map(c => stripMarkdownFormatting(c.trim()));
+        tableHeaders = cells.map(c => stripMarkdownFormatting(c.trim(), areFontsLoaded()));
       } else {
-        tableRows.push(cells.map(c => stripMarkdownFormatting(c.trim())));
+        tableRows.push(cells.map(c => stripMarkdownFormatting(c.trim(), areFontsLoaded())));
       }
       continue;
     }
@@ -914,8 +988,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(20);
       doc.setFontSize(18);
       doc.setTextColor(...darkColor);
-      doc.setFont('helvetica', 'bold');
-      const text = stripMarkdownFormatting(trimmedLine.slice(2));
+      doc.setFont(fontName, 'bold');
+      const text = stripMarkdownFormatting(trimmedLine.slice(2), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth);
       doc.text(textLines, margin, yPos);
       yPos += textLines.length * 8 + 6;
@@ -925,8 +999,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(16);
       doc.setFontSize(14);
       doc.setTextColor(...primaryColor);
-      doc.setFont('helvetica', 'bold');
-      const text = stripMarkdownFormatting(trimmedLine.slice(3));
+      doc.setFont(fontName, 'bold');
+      const text = stripMarkdownFormatting(trimmedLine.slice(3), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth);
       doc.text(textLines, margin, yPos);
       yPos += textLines.length * 6 + 5;
@@ -936,8 +1010,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(14);
       doc.setFontSize(12);
       doc.setTextColor(...darkColor);
-      doc.setFont('helvetica', 'bold');
-      const text = stripMarkdownFormatting(trimmedLine.slice(4));
+      doc.setFont(fontName, 'bold');
+      const text = stripMarkdownFormatting(trimmedLine.slice(4), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth);
       doc.text(textLines, margin, yPos);
       yPos += textLines.length * 5 + 4;
@@ -947,8 +1021,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(12);
       doc.setFontSize(11);
       doc.setTextColor(...grayColor);
-      doc.setFont('helvetica', 'bold');
-      const text = stripMarkdownFormatting(trimmedLine.replace(/^#{4,6} /, ''));
+      doc.setFont(fontName, 'bold');
+      const text = stripMarkdownFormatting(trimmedLine.replace(/^#{4,6} /, ''), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth);
       doc.text(textLines, margin, yPos);
       yPos += textLines.length * 5 + 3;
@@ -958,14 +1032,14 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fontName, 'normal');
       const match = line.match(/^(\s+)[-*] (.*)$/);
       if (match) {
         const indent = Math.min(Math.floor(match[1].replace(/\t/g, '    ').length / 4), 3) * 8;
-        const text = stripMarkdownFormatting(match[2]);
+        const text = stripMarkdownFormatting(match[2], areFontsLoaded());
         const textLines = doc.splitTextToSize(text, contentWidth - 12 - indent);
-        // Use 'o' for nested bullet (looks like hollow circle, Unicode not supported)
-        doc.text('o', margin + indent, yPos);
+        // Use hollow circle for nested bullet (Noto Sans supports this)
+        doc.text('○', margin + indent, yPos);
         doc.text(textLines, margin + indent + 5, yPos);
         yPos += textLines.length * 5 + 2;
       }
@@ -975,10 +1049,10 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
-      doc.setFont('helvetica', 'normal');
-      const text = stripMarkdownFormatting(trimmedLine.slice(2));
+      doc.setFont(fontName, 'normal');
+      const text = stripMarkdownFormatting(trimmedLine.slice(2), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth - 10);
-      doc.text('•', margin, yPos);
+      doc.text('●', margin, yPos);
       doc.text(textLines, margin + 8, yPos);
       yPos += textLines.length * 5 + 2;
     }
@@ -987,11 +1061,11 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fontName, 'normal');
       const match = trimmedLine.match(/^(\d+)\. (.*)$/);
       if (match) {
         const num = match[1];
-        const text = stripMarkdownFormatting(match[2]);
+        const text = stripMarkdownFormatting(match[2], areFontsLoaded());
         const textLines = doc.splitTextToSize(text, contentWidth - 12);
         doc.text(`${num}.`, margin, yPos);
         doc.text(textLines, margin + 10, yPos);
@@ -1011,8 +1085,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(12);
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.setFont('helvetica', 'italic');
-      const text = stripMarkdownFormatting(trimmedLine.slice(2));
+      doc.setFont(fontName, 'italic');
+      const text = stripMarkdownFormatting(trimmedLine.slice(2), areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth - 15);
       // Draw left border
       doc.setDrawColor(...primaryColor);
@@ -1026,8 +1100,8 @@ export function exportAppendixToPdf(content: string, title: string): void {
       checkPageBreak(10);
       doc.setFontSize(10);
       doc.setTextColor(40, 40, 40);
-      doc.setFont('helvetica', 'normal');
-      const text = stripMarkdownFormatting(trimmedLine);
+      doc.setFont(fontName, 'normal');
+      const text = stripMarkdownFormatting(trimmedLine, areFontsLoaded());
       const textLines = doc.splitTextToSize(text, contentWidth);
       doc.text(textLines, margin, yPos);
       yPos += textLines.length * 5 + 3;
@@ -1072,10 +1146,12 @@ function renderPdfTable(
       fontStyle: 'bold',
       fontSize: 8,
       cellPadding: 2,
+      valign: 'middle',
     },
     bodyStyles: {
       fontSize: 8,
       cellPadding: 2,
+      valign: 'middle',
     },
     alternateRowStyles: {
       fillColor: [245, 245, 250],
@@ -1093,9 +1169,11 @@ function renderPdfTable(
 
 /**
  * Strip markdown formatting for plain text (used in PDF)
+ * @param text - The text to strip formatting from
+ * @param unicodeFontLoaded - If true, keep Unicode symbols (Noto Sans supports them)
  */
-function stripMarkdownFormatting(text: string): string {
-  return text
+function stripMarkdownFormatting(text: string, unicodeFontLoaded: boolean = true): string {
+  let result = text
     .replace(/\*\*\*(.+?)\*\*\*/g, '$1')  // Bold+Italic ***text***
     .replace(/___(.+?)___/g, '$1')         // Bold+Italic ___text___
     .replace(/\*\*(.+?)\*\*/g, '$1')       // Bold **text**
@@ -1108,19 +1186,25 @@ function stripMarkdownFormatting(text: string): string {
     .replace(/\^(.+?)\^/g, '$1')           // Superscript ^text^
     .replace(/~(.+?)~/g, '$1')             // Subscript ~text~
     .replace(/`(.+?)`/g, '$1')             // Inline code
-    .replace(/\[(.+?)\]\(.+?\)/g, '$1')    // Links [text](url)
-    // Replace Unicode symbols that don't render in PDF's Helvetica font
-    .replace(/↓/g, 'v')                    // Down arrow
-    .replace(/→/g, '->')                   // Right arrow
-    .replace(/←/g, '<-')                   // Left arrow
-    .replace(/↑/g, '^')                    // Up arrow
-    .replace(/⬛/g, '*')                    // Black square
-    .replace(/◦/g, 'o')                    // White bullet
-    .replace(/◆/g, '*')                    // Diamond
-    .replace(/◇/g, 'o')                    // White diamond
-    .replace(/▶/g, '>')                    // Right triangle
-    .replace(/◀/g, '<')                    // Left triangle
-    .replace(/★/g, '*')                    // Star
-    .replace(/☆/g, '*');                   // White star
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1');   // Links [text](url)
+
+  // Only replace Unicode symbols if font doesn't support them
+  if (!unicodeFontLoaded) {
+    result = result
+      .replace(/↓/g, 'v')                    // Down arrow
+      .replace(/→/g, '->')                   // Right arrow
+      .replace(/←/g, '<-')                   // Left arrow
+      .replace(/↑/g, '^')                    // Up arrow
+      .replace(/⬛/g, '*')                    // Black square
+      .replace(/◦/g, 'o')                    // White bullet
+      .replace(/◆/g, '*')                    // Diamond
+      .replace(/◇/g, 'o')                    // White diamond
+      .replace(/▶/g, '>')                    // Right triangle
+      .replace(/◀/g, '<')                    // Left triangle
+      .replace(/★/g, '*')                    // Star
+      .replace(/☆/g, '*');                   // White star
+  }
+
+  return result;
 }
 

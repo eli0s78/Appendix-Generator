@@ -152,9 +152,9 @@ Return ONLY the JSON object, no additional text.`;
     }
   };
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (planningData) {
-      exportPlanningTableToPdf(planningData);
+      await exportPlanningTableToPdf(planningData);
     }
   };
 

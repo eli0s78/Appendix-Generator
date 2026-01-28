@@ -125,12 +125,12 @@ ${group.foresight_task}`;
     }
   };
 
-  const handleDownloadPdf = (groupId: string) => {
+  const handleDownloadPdf = async (groupId: string) => {
     const content = generatedAppendices[groupId];
     if (content) {
       const group = planningData?.chapters?.find((g) => g.group_id === groupId);
       const title = group?.chapter_titles?.join('_') || groupId;
-      exportAppendixToPdf(content, `Appendix_${groupId}_${title}`);
+      await exportAppendixToPdf(content, `Appendix_${groupId}_${title}`);
     }
   };
 
