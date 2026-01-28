@@ -930,6 +930,109 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
     }
   };
 
+  // Helper to render text with inline bold formatting
+  // Handles patterns like "**Bold Text:** normal text" or "**Bold** and **more bold**"
+  const renderTextWithBold = (text: string, x: number, y: number, maxWidth: number): number => {
+    // First strip markdown formatting except bold
+    let cleanText = text
+      .replace(/\*\*\*(.+?)\*\*\*/g, '**$1**')  // Keep bold from bold+italic
+      .replace(/_(.+?)_/g, '$1')                 // Remove italic underscores
+      .replace(/`(.+?)`/g, '$1')                 // Remove inline code
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1')        // Remove links
+      .replace(/↓/g, 'v').replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '^');  // ASCII arrows
+
+    // Check if text contains bold markers
+    if (!cleanText.includes('**')) {
+      // No bold - render normally
+      doc.setFont(fontName, 'normal');
+      const lines = doc.splitTextToSize(cleanText, maxWidth);
+      doc.text(lines, x, y);
+      return lines.length * 5;
+    }
+
+    // Parse into segments of bold and normal text
+    const segments: { text: string; bold: boolean }[] = [];
+    let remaining = cleanText;
+
+    while (remaining.length > 0) {
+      const boldStart = remaining.indexOf('**');
+      if (boldStart === -1) {
+        // No more bold markers
+        if (remaining.length > 0) {
+          segments.push({ text: remaining, bold: false });
+        }
+        break;
+      }
+
+      // Add text before bold marker
+      if (boldStart > 0) {
+        segments.push({ text: remaining.slice(0, boldStart), bold: false });
+      }
+
+      // Find end of bold
+      const afterStart = remaining.slice(boldStart + 2);
+      const boldEnd = afterStart.indexOf('**');
+
+      if (boldEnd === -1) {
+        // Unmatched bold marker - treat rest as normal
+        segments.push({ text: remaining.slice(boldStart), bold: false });
+        break;
+      }
+
+      // Add bold text
+      segments.push({ text: afterStart.slice(0, boldEnd), bold: true });
+      remaining = afterStart.slice(boldEnd + 2);
+    }
+
+    // Render segments - for simplicity, render on same line with manual x tracking
+    // For multi-line, we'll concatenate and use word wrap
+    let fullText = '';
+    const boldRanges: { start: number; end: number }[] = [];
+
+    for (const seg of segments) {
+      if (seg.bold) {
+        boldRanges.push({ start: fullText.length, end: fullText.length + seg.text.length });
+      }
+      fullText += seg.text;
+    }
+
+    // Simple approach: if first part is bold (common pattern like "**Term:** description")
+    // Render first segment bold, rest normal on same line
+    if (segments.length >= 1 && segments[0].bold) {
+      const boldPart = segments[0].text;
+      const restPart = segments.slice(1).map(s => s.text).join('');
+
+      // Render bold part
+      doc.setFont(fontName, 'bold');
+      const boldWidth = doc.getTextWidth(boldPart);
+      doc.text(boldPart, x, y);
+
+      // Render rest
+      if (restPart.length > 0) {
+        doc.setFont(fontName, 'normal');
+        const restLines = doc.splitTextToSize(restPart, maxWidth - boldWidth - 2);
+        if (restLines.length === 1) {
+          doc.text(restLines[0], x + boldWidth, y);
+          return 5;
+        } else {
+          // First line continues, rest wrap
+          doc.text(restLines[0], x + boldWidth, y);
+          for (let i = 1; i < restLines.length; i++) {
+            doc.text(restLines[i], x, y + i * 5);
+          }
+          return restLines.length * 5;
+        }
+      }
+      return 5;
+    }
+
+    // Fallback: render full text normally if pattern doesn't match simple case
+    doc.setFont(fontName, 'normal');
+    const lines = doc.splitTextToSize(fullText, maxWidth);
+    doc.text(lines, x, y);
+    return lines.length * 5;
+  };
+
   // Parse markdown and render
   const lines = content.split('\n');
   let inTable = false;
@@ -1032,17 +1135,15 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
-      doc.setFont(fontName, 'normal');
       const match = line.match(/^(\s+)[-*] (.*)$/);
       if (match) {
         const indent = Math.min(Math.floor(match[1].replace(/\t/g, '    ').length / 4), 3) * 8;
-        const text = stripMarkdownFormatting(match[2], areFontsLoaded());
-        const textLines = doc.splitTextToSize(text, contentWidth - 12 - indent);
-        // Use hollow circle for nested bullet (fallback to 'o' for Helvetica)
-        const nestedBullet = areFontsLoaded() ? '○' : 'o';
-        doc.text(nestedBullet, margin + indent, yPos);
-        doc.text(textLines, margin + indent + 5, yPos);
-        yPos += textLines.length * 5 + 2;
+        // Use 'o' as nested bullet - always works in any font
+        doc.setFont(fontName, 'normal');
+        doc.text('o', margin + indent, yPos);
+        // Render text with bold support
+        const textHeight = renderTextWithBold(match[2], margin + indent + 6, yPos, contentWidth - 12 - indent);
+        yPos += textHeight + 2;
       }
     }
     // Top-level bullet list
@@ -1050,29 +1151,26 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
+      // Use '*' as bullet - guaranteed to work in all fonts
       doc.setFont(fontName, 'normal');
-      const text = stripMarkdownFormatting(trimmedLine.slice(2), areFontsLoaded());
-      const textLines = doc.splitTextToSize(text, contentWidth - 10);
-      // Use filled circle for bullet (fallback to hyphen for Helvetica - ASCII safe)
-      const bullet = areFontsLoaded() ? '●' : '-';
-      doc.text(bullet, margin, yPos);
-      doc.text(textLines, margin + 8, yPos);
-      yPos += textLines.length * 5 + 2;
+      doc.text('*', margin, yPos);
+      // Render text with bold support
+      const textHeight = renderTextWithBold(trimmedLine.slice(2), margin + 8, yPos, contentWidth - 10);
+      yPos += textHeight + 2;
     }
     // Numbered list
     else if (trimmedLine.match(/^\d+\. /)) {
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
-      doc.setFont(fontName, 'normal');
       const match = trimmedLine.match(/^(\d+)\. (.*)$/);
       if (match) {
         const num = match[1];
-        const text = stripMarkdownFormatting(match[2], areFontsLoaded());
-        const textLines = doc.splitTextToSize(text, contentWidth - 12);
+        doc.setFont(fontName, 'normal');
         doc.text(`${num}.`, margin, yPos);
-        doc.text(textLines, margin + 10, yPos);
-        yPos += textLines.length * 5 + 2;
+        // Render text with bold support
+        const textHeight = renderTextWithBold(match[2], margin + 10, yPos, contentWidth - 12);
+        yPos += textHeight + 2;
       }
     }
     // Horizontal rule
@@ -1103,11 +1201,9 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       checkPageBreak(10);
       doc.setFontSize(10);
       doc.setTextColor(40, 40, 40);
-      doc.setFont(fontName, 'normal');
-      const text = stripMarkdownFormatting(trimmedLine, areFontsLoaded());
-      const textLines = doc.splitTextToSize(text, contentWidth);
-      doc.text(textLines, margin, yPos);
-      yPos += textLines.length * 5 + 3;
+      // Render text with bold support
+      const textHeight = renderTextWithBold(trimmedLine, margin, yPos, contentWidth);
+      yPos += textHeight + 3;
     }
   }
 
