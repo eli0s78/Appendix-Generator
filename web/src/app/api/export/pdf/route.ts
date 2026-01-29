@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
         // Dynamically import chromium for serverless context
         const chromium = (await import('@sparticuz/chromium-min')).default;
 
-        // Remote URL for the chromium binary (matching the package version 131.0.1)
-        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
+        // Remote URL for the chromium binary (matching the package version 123.0.1)
+        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar";
 
         browser = await puppeteer.launch({
           args: chromium.args,
