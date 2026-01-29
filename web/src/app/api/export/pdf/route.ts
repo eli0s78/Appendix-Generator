@@ -80,12 +80,14 @@ export async function POST(req: NextRequest) {
           ${styles || ''}
         </style>
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Color+Emoji&display=swap');
+          
           @page {
             size: A4;
             margin: 20mm;
           }
           body {
-            font-family: ui-sans-serif, system-ui, sans-serif;
+            font-family: 'Noto Sans', 'Noto Color Emoji', 'Open Sans', ui-sans-serif, system-ui, sans-serif;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
