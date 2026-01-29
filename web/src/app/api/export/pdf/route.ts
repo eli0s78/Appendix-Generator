@@ -111,9 +111,7 @@ export async function POST(req: NextRequest) {
     });
 
     console.log('Waiting for fonts...');
-    await page.evaluate(async () => {
-      await document.fonts.ready;
-    });
+    // Fonts are handled by networkidle0 above
 
     console.log('Generating PDF buffer...');
     const pdfBuffer = await page.pdf({
