@@ -190,6 +190,13 @@ Return ONLY the JSON object, no additional text.`;
         <CardContent className="space-y-4">
           {!planningData ? (
             <>
+              <GenerationSettingsPanel
+                forecastYears={forecastYears}
+                setForecastYears={setForecastYears}
+                wordCountOption={wordCountOption}
+                setWordCountOption={setWordCountOption}
+              />
+              <Separator className="my-4" />
               <Button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
@@ -352,58 +359,12 @@ Return ONLY the JSON object, no additional text.`;
               <Separator />
 
               {/* Generation Settings */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">Generation Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Forecast Horizon Slider */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Forecast Horizon</Label>
-                    <div className="pt-2">
-                      <Slider
-                        value={[forecastYears]}
-                        onValueChange={(value) => setForecastYears(value[0])}
-                        min={5}
-                        max={30}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-                        <span>{forecastYears} years</span>
-                        <span>Target: {new Date().getFullYear() + forecastYears}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Word Count Radio Buttons */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Target Word Count</Label>
-                    <RadioGroup
-                      value={wordCountOption}
-                      onValueChange={setWordCountOption}
-                      className="space-y-2"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <RadioGroupItem value="1500-2000" id="short" />
-                        <Label htmlFor="short" className="font-normal cursor-pointer text-sm">
-                          Short (1500-2000 words)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <RadioGroupItem value="2500-3500" id="standard" />
-                        <Label htmlFor="standard" className="font-normal cursor-pointer text-sm">
-                          Standard (2500-3500 words)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <RadioGroupItem value="4000-5000" id="detailed" />
-                        <Label htmlFor="detailed" className="font-normal cursor-pointer text-sm">
-                          Detailed (4000-5000 words)
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </div>
-              </div>
+              <GenerationSettingsPanel
+                forecastYears={forecastYears}
+                setForecastYears={setForecastYears}
+                wordCountOption={wordCountOption}
+                setWordCountOption={setWordCountOption}
+              />
 
               {error && (
                 <Alert variant="destructive">
@@ -442,6 +403,75 @@ Return ONLY the JSON object, no additional text.`;
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+interface GenerationSettingsPanelProps {
+  forecastYears: number;
+  setForecastYears: (val: number) => void;
+  wordCountOption: string;
+  setWordCountOption: (val: string) => void;
+}
+
+function GenerationSettingsPanel({
+  forecastYears,
+  setForecastYears,
+  wordCountOption,
+  setWordCountOption,
+}: GenerationSettingsPanelProps) {
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold">Generation Settings</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Forecast Horizon Slider */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Forecast Horizon</Label>
+          <div className="pt-2">
+            <Slider
+              value={[forecastYears]}
+              onValueChange={(value) => setForecastYears(value[0])}
+              min={5}
+              max={30}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between mt-2 text-sm text-muted-foreground">
+              <span>{forecastYears} years</span>
+              <span>Target: {new Date().getFullYear() + forecastYears}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Word Count Radio Buttons */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Target Word Count</Label>
+          <RadioGroup
+            value={wordCountOption}
+            onValueChange={setWordCountOption}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem value="1500-2000" id="short" />
+              <Label htmlFor="short" className="font-normal cursor-pointer text-sm">
+                Short (1500-2000 words)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem value="2500-3500" id="standard" />
+              <Label htmlFor="standard" className="font-normal cursor-pointer text-sm">
+                Standard (2500-3500 words)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <RadioGroupItem value="4000-5000" id="detailed" />
+              <Label htmlFor="detailed" className="font-normal cursor-pointer text-sm">
+                Detailed (4000-5000 words)
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+      </div>
     </div>
   );
 }
