@@ -111,7 +111,9 @@ export async function POST(req: NextRequest) {
     });
 
     console.log('Waiting for fonts...');
-    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
 
     console.log('Generating PDF buffer...');
     const pdfBuffer = await page.pdf({
