@@ -476,7 +476,8 @@ export async function exportAllAsZip(
   if (pdfBatchGenerator) {
     // Optimized Batch Processing
     const entries = Object.entries(appendices);
-    const batchSize = 3;
+    // Reduce batch size to 2 to avoid payload limits
+    const batchSize = 2;
 
     // Process in chunks
     for (let i = 0; i < entries.length; i += batchSize) {
@@ -503,10 +504,32 @@ export async function exportAllAsZip(
               bytes[j] = binaryString.charCodeAt(j);
             }
             folder.file(`${safeName}.pdf`, new Blob([bytes], { type: 'application/pdf' }));
+          } else {
+            // If individual item error, log it
+            console.error(`PDF generation failed for ${id}: ${base64}`);
+            // Note: Depending on logic, we could try to fallback for just this item here? 
+            // But simpler to let the fallback block below handle it? 
+            // No, fallback logic needs to be triggered if the *call* failed.
+            throw new Error(`Item ${id} failed in batch.`);
           }
         }
       } catch (err) {
-        console.error(`Batch PDF generation failed for chunk ${i}:`, err);
+        console.error(`Batch PDF generation failed for chunk ${i}, falling back to sequential:`, err);
+
+        // Fallback: Process this chunk sequentially using the single generator
+        if (pdfGenerator) {
+          for (const [groupId, content] of chunk) {
+            const safeName = sanitizeFileName(groupId);
+            try {
+              const pdfBlob = await pdfGenerator(content, groupId);
+              folder.file(`${safeName}.pdf`, pdfBlob);
+            } catch (seqErr) {
+              console.error(`Fallback sequential generation failed for ${groupId}:`, seqErr);
+            }
+            // Delay for safety
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
       }
     }
 

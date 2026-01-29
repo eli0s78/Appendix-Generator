@@ -16,20 +16,9 @@ interface PdfExportRequest {
 export const maxDuration = 60;
 
 // Helper to render a single PDF page
-async function renderPdf(browser: any, html: string, styles?: string): Promise<Buffer> {
+async function renderPdf(browser: any, html: string, styles?: string, katexCss: string = ''): Promise<Buffer> {
   const page = await browser.newPage();
   try {
-    // Read KaTeX CSS (this is synchronous and fast, ok to do here or pass in)
-    const fs = require('fs');
-    const path = require('path');
-    const katexCssPath = path.join(process.cwd(), 'node_modules', 'katex', 'dist', 'katex.min.css');
-    let katexCss = '';
-    try {
-      katexCss = fs.readFileSync(katexCssPath, 'utf-8');
-    } catch (err) {
-      console.warn('Could not read KaTeX CSS:', err);
-    }
-
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -118,6 +107,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'HTML content or batch is required' }, { status: 400 });
     }
 
+    // Read KaTeX CSS once
+    const katexCssPath = path.join(process.cwd(), 'node_modules', 'katex', 'dist', 'katex.min.css');
+    let katexCss = '';
+    try {
+      katexCss = fs.readFileSync(katexCssPath, 'utf-8');
+    } catch (err) {
+      console.warn('Could not read KaTeX CSS:', err);
+    }
+
     console.log(`Starting PDF generation (${batch ? 'Batch: ' + batch.length : 'Single'})...`);
 
     // Launch Browser
@@ -154,7 +152,7 @@ export async function POST(req: NextRequest) {
       for (const item of batch) {
         try {
           console.log(`Rendering PDF for item: ${item.id}`);
-          const pdfBuffer = await renderPdf(browser, item.html, styles);
+          const pdfBuffer = await renderPdf(browser, item.html, styles, katexCss);
           results[item.id] = pdfBuffer.toString('base64');
         } catch (err: any) {
           console.error(`Failed to render item ${item.id}:`, err);
@@ -167,7 +165,7 @@ export async function POST(req: NextRequest) {
 
     // Handle SINGLE Request
     if (html) {
-      const pdfBuffer = await renderPdf(browser, html, styles);
+      const pdfBuffer = await renderPdf(browser, html, styles, katexCss);
       return new NextResponse(pdfBuffer as any, {
         headers: {
           'Content-Type': 'application/pdf',
