@@ -255,13 +255,50 @@ ${group.foresight_task}`;
         return await response.blob();
       };
 
-      setPdfExportStatus({ isExporting: true, stage: 'Generating ZIP with PDFs...' });
+      // Define Batch PDF Generator
+      const pdfBatchGenerator = async (items: Array<{ id: string, content: string, title: string }>): Promise<Record<string, string>> => {
+        // 1. Prepare batch payload with rendered HTML
+        const batch = items.map(item => {
+          const rawHtml = renderToStaticMarkup(<MarkdownPreview content={item.content} />);
+          // Define simple styling wrapper matching our single-export look
+          const styledHtml = `
+             <div class="prose prose-sm max-w-none">
+               <h1 class="text-2xl font-bold mb-4" style="color: #4A4A8A;">${item.title}</h1>
+               ${rawHtml}
+             </div>
+           `;
+          return { id: item.id, html: styledHtml };
+        });
+
+        // 2. Call API with batch
+        const response = await fetch('/api/export/pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            batch,
+            styles: `
+                h1, h2, h3 { color: #4A4A8A; }
+                blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; font-style: italic; }
+              `
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Batch PDF generation failed on server');
+        }
+
+        const data = await response.json();
+        return data.results; // Returns { id: base64 }
+      };
+
+      setPdfExportStatus({ isExporting: true, stage: 'Generating ZIP with PDFs (Batch Optimized)...' });
 
       try {
         await exportAllAsZip(
           generatedAppendices,
           planningData.book_overview.title,
-          pdfGenerator
+          pdfGenerator,
+          pdfBatchGenerator
         );
       } catch (error) {
         console.error("ZIP export failed:", error);

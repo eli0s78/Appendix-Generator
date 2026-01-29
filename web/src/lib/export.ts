@@ -452,7 +452,8 @@ function parseInlineFormatting(text: string, inheritedStyles: { bold?: boolean; 
 export async function exportAllAsZip(
   appendices: Record<string, string>,
   bookTitle: string,
-  pdfGenerator?: (content: string, title: string) => Promise<Blob>
+  pdfGenerator?: (content: string, title: string) => Promise<Blob>,
+  pdfBatchGenerator?: (items: Array<{ id: string, content: string, title: string }>) => Promise<Record<string, string>>
 ): Promise<void> {
   const zip = new JSZip();
   const folder = zip.folder('appendices');
@@ -461,41 +462,65 @@ export async function exportAllAsZip(
     throw new Error('Failed to create ZIP folder');
   }
 
+  // 1. Add Markdown and DOCX files (Client-side, fast)
   for (const [groupId, content] of Object.entries(appendices)) {
     const safeName = sanitizeFileName(groupId);
-
-    // Add Markdown
     folder.file(`${safeName}.md`, content);
 
-    // Add DOCX
     const doc = createDocxFromMarkdown(content, groupId);
     const docxBlob = await Packer.toBlob(doc);
     folder.file(`${safeName}.docx`, docxBlob);
+  }
 
-    // Add PDF if generator provided
-    if (pdfGenerator) {
-      let pdfBlob: Blob | null = null;
-      let attempts = 0;
-      const maxAttempts = 2;
+  // 2. Add PDFs (Server-side, potentially slow)
+  if (pdfBatchGenerator) {
+    // Optimized Batch Processing
+    const entries = Object.entries(appendices);
+    const batchSize = 3;
 
-      while (!pdfBlob && attempts < maxAttempts) {
-        try {
-          attempts++;
-          pdfBlob = await pdfGenerator(content, groupId);
-          folder.file(`${safeName}.pdf`, pdfBlob);
-        } catch (err) {
-          console.warn(`Attempt ${attempts}/${maxAttempts} failed for ${groupId}:`, err);
-          if (attempts < maxAttempts) {
-            // Wait longer before retry
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } else {
-            console.error(`Failed to generate PDF for ${groupId} after ${maxAttempts} attempts.`);
+    // Process in chunks
+    for (let i = 0; i < entries.length; i += batchSize) {
+      const chunk = entries.slice(i, i + batchSize);
+
+      const payload = chunk.map(([groupId, content]) => ({
+        id: groupId,
+        content,
+        title: groupId // Simple title, generator can refine
+      }));
+
+      try {
+        // Generate batch
+        const results = await pdfBatchGenerator(payload);
+
+        // Add results to zip
+        for (const [id, base64] of Object.entries(results)) {
+          if (base64 && !base64.endsWith('_error')) {
+            const safeName = sanitizeFileName(id);
+            // Convert base64 to Blob
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let j = 0; j < binaryString.length; j++) {
+              bytes[j] = binaryString.charCodeAt(j);
+            }
+            folder.file(`${safeName}.pdf`, new Blob([bytes], { type: 'application/pdf' }));
           }
         }
+      } catch (err) {
+        console.error(`Batch PDF generation failed for chunk ${i}:`, err);
       }
+    }
 
-      // Add a substantial delay to prevent overwhelming the serverless function (2s)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+  } else if (pdfGenerator) {
+    // Fallback to Sequential Single Processing (Legacy/Retry)
+    for (const [groupId, content] of Object.entries(appendices)) {
+      const safeName = sanitizeFileName(groupId);
+      try {
+        const pdfBlob = await pdfGenerator(content, groupId);
+        folder.file(`${safeName}.pdf`, pdfBlob);
+      } catch (err) {
+        console.error(`Failed to generate PDF for ${groupId}:`, err);
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
 

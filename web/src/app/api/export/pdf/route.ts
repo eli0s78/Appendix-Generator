@@ -9,79 +9,19 @@ interface PdfExportRequest {
   html?: string;
   styles?: string; // Optional custom styles to inject
   warmup?: boolean;
+  batch?: Array<{ id: string; html: string }>;
 }
 
 // Allow longer execution time (Vercel Pro: 300s, Hobby: 10s - asking for max possible)
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
-  let browser: any;
+// Helper to render a single PDF page
+async function renderPdf(browser: any, html: string, styles?: string): Promise<Buffer> {
+  const page = await browser.newPage();
   try {
-    const { html, styles, warmup }: PdfExportRequest = await req.json();
-    const isDev = process.env.NODE_ENV === 'development';
-
-    // Warmup handling: Unpack Chromium without generating PDF
-    if (warmup) {
-      console.log('Warming up PDF generator environment...');
-      if (process.env.NODE_ENV !== 'development') {
-        process.env.AWS_LAMBDA_JS_RUNTIME = "nodejs20.x";
-        const chromium = (await import('@sparticuz/chromium-min')).default;
-        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
-        await chromium.executablePath(chromiumPack);
-        console.log('Chromium binary unpacked and ready.');
-      }
-      return NextResponse.json({ status: 'warmed' });
-    }
-
-    if (!html) {
-      return NextResponse.json(
-        { error: 'HTML content is required' },
-        { status: 400 }
-      );
-    }
-
-    console.log('Starting PDF generation...');
-    console.log('Starting PDF generation...');
-    try {
-      if (isDev) {
-        console.log('Launching local Puppeteer...');
-        const localPuppeteer = await import('puppeteer');
-        browser = await localPuppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
-      } else {
-        console.log('Launching Serverless Chromium (Remote)...');
-
-        // Explicitly set the runtime environment variable for Vercel/AWS Lambda
-        process.env.AWS_LAMBDA_JS_RUNTIME = "nodejs20.x";
-
-        // Dynamically import chromium for serverless context
-        const chromium = (await import('@sparticuz/chromium-min')).default;
-
-        // Remote URL for the chromium binary (matching the package version 131.0.1)
-        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
-
-        browser = await puppeteer.launch({
-          args: chromium.args,
-          defaultViewport: { width: 1920, height: 1080 },
-          executablePath: await chromium.executablePath(chromiumPack),
-          headless: true,
-        });
-      }
-    } catch (launchError: any) {
-      console.error('Browser Launch Failed:', launchError);
-      return NextResponse.json(
-        {
-          error: 'Failed to launch browser',
-          details: launchError.message,
-          stack: launchError.stack
-        },
-        { status: 500 }
-      );
-    }
-
-    // Read KaTeX CSS
+    // Read KaTeX CSS (this is synchronous and fast, ok to do here or pass in)
+    const fs = require('fs');
+    const path = require('path');
     const katexCssPath = path.join(process.cwd(), 'node_modules', 'katex', 'dist', 'katex.min.css');
     let katexCss = '';
     try {
@@ -90,9 +30,6 @@ export async function POST(req: NextRequest) {
       console.warn('Could not read KaTeX CSS:', err);
     }
 
-    const page = await browser.newPage();
-
-    // Set content with a shell that includes Tailwind/Globals
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -117,8 +54,7 @@ export async function POST(req: NextRequest) {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          /* (Styles truncated for brevity in logs, but kept in actual code) */
-          table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #d1d5db !important; margin-bottom: 1rem !important; font-size: 9pt !important; }
+           table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #d1d5db !important; margin-bottom: 1rem !important; font-size: 9pt !important; }
           thead { display: table-header-group !important; background-color: #4A4A8A !important; border-bottom: 2px solid #4A4A8A !important; color: white !important; }
           tfoot { display: table-footer-group !important; }
           tr { break-inside: avoid !important; page-break-inside: avoid !important; border-bottom: 1px solid #e5e7eb !important; }
@@ -138,48 +74,114 @@ export async function POST(req: NextRequest) {
       </html>
     `;
 
-    console.log('Setting page content...');
     await page.setContent(fullHtml, {
       waitUntil: 'networkidle0',
       timeout: 30000,
     });
 
-    console.log('Waiting for fonts...');
     // @ts-ignore
     await page.evaluate(async () => {
       await document.fonts.ready;
     });
-    // Fonts are handled by networkidle0 above
 
-    console.log('Generating PDF buffer...');
-    const pdfBuffer = await page.pdf({
+    return await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '20mm',
-        bottom: '20mm',
-        left: '20mm',
-      },
+      margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' },
       displayHeaderFooter: false,
     });
+  } finally {
+    await page.close();
+  }
+}
 
-    console.log('PDF Generated successfully.');
-    return new NextResponse(pdfBuffer as any, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename=appendix.pdf',
-      },
-    });
+export async function POST(req: NextRequest) {
+  let browser: any;
+  try {
+    const { html, styles, warmup, batch }: PdfExportRequest = await req.json();
+    const isDev = process.env.NODE_ENV === 'development';
+
+    // Warmup handling
+    if (warmup) {
+      console.log('Warming up PDF generator environment...');
+      if (!isDev) {
+        process.env.AWS_LAMBDA_JS_RUNTIME = "nodejs20.x";
+        const chromium = (await import('@sparticuz/chromium-min')).default;
+        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
+        await chromium.executablePath(chromiumPack);
+        console.log('Chromium binary unpacked and ready.');
+      }
+      return NextResponse.json({ status: 'warmed' });
+    }
+
+    if (!html && !batch) {
+      return NextResponse.json({ error: 'HTML content or batch is required' }, { status: 400 });
+    }
+
+    console.log(`Starting PDF generation (${batch ? 'Batch: ' + batch.length : 'Single'})...`);
+
+    // Launch Browser
+    try {
+      if (isDev) {
+        console.log('Launching local Puppeteer...');
+        const localPuppeteer = await import('puppeteer');
+        browser = await localPuppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+      } else {
+        console.log('Launching Serverless Chromium (Remote)...');
+        process.env.AWS_LAMBDA_JS_RUNTIME = "nodejs20.x";
+        const chromium = (await import('@sparticuz/chromium-min')).default;
+        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: { width: 1920, height: 1080 },
+          executablePath: await chromium.executablePath(chromiumPack),
+          headless: true,
+        });
+      }
+    } catch (launchError: any) {
+      console.error('Browser Launch Failed:', launchError);
+      return NextResponse.json({ error: 'Failed to launch browser', details: launchError.message }, { status: 500 });
+    }
+
+    // Handle BATCH Request
+    if (batch) {
+      const results: Record<string, string> = {}; // id -> base64
+
+      // Process sequentially to check for errors but reuse browser
+      for (const item of batch) {
+        try {
+          console.log(`Rendering PDF for item: ${item.id}`);
+          const pdfBuffer = await renderPdf(browser, item.html, styles);
+          results[item.id] = pdfBuffer.toString('base64');
+        } catch (err: any) {
+          console.error(`Failed to render item ${item.id}:`, err);
+          results[item.id + '_error'] = err.message;
+        }
+      }
+
+      return NextResponse.json({ results });
+    }
+
+    // Handle SINGLE Request
+    if (html) {
+      const pdfBuffer = await renderPdf(browser, html, styles);
+      return new NextResponse(pdfBuffer as any, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename=appendix.pdf',
+        },
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 
   } catch (error: any) {
     console.error('PDF Generation Error:', error);
     return NextResponse.json(
-      {
-        error: 'Critical PDF Generation Failure',
-        details: error.message,
-        stack: error.stack
-      },
+      { error: 'Critical PDF Generation Failure', details: error.message },
       { status: 500 }
     );
   } finally {
