@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
+import chromium from '@sparticuz/chromium-min';
 
 // Interface for the request body
 interface PdfExportRequest {
@@ -36,18 +36,16 @@ export async function POST(req: NextRequest) {
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         });
       } else {
-        console.log('Launching Serverless Chromium...');
-        console.log('Chromium Args:', chromium.args);
+        console.log('Launching Serverless Chromium (Remote)...');
 
-        // Ensure executable path is resolved
-        const execPath = await chromium.executablePath();
-        console.log('Executable Path:', execPath);
+        // Remote URL for the chromium binary (matching the package version 131.0.1)
+        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
 
         browser = await puppeteer.launch({
           args: chromium.args,
           defaultViewport: { width: 1920, height: 1080 },
-          executablePath: execPath,
-          headless: true, // Hardcoded to true as required by standard serverless usage
+          executablePath: await chromium.executablePath(chromiumPack),
+          headless: true,
         });
       }
     } catch (launchError: any) {
