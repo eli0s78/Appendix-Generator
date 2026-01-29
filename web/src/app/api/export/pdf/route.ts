@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer-core';
+import fs from 'fs';
+import path from 'path';
 
 
 // Interface for the request body
@@ -66,6 +68,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Read KaTeX CSS
+    const katexCssPath = path.join(process.cwd(), 'node_modules', 'katex', 'dist', 'katex.min.css');
+    let katexCss = '';
+    try {
+      katexCss = fs.readFileSync(katexCssPath, 'utf-8');
+    } catch (err) {
+      console.warn('Could not read KaTeX CSS:', err);
+    }
+
     const page = await browser.newPage();
 
     // Set content with a shell that includes Tailwind/Globals
@@ -80,7 +91,9 @@ export async function POST(req: NextRequest) {
           ${styles || ''}
         </style>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Color+Emoji&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Color+Emoji&family=Noto+Sans+Math&family=Noto+Sans+Symbols&display=swap');
+          /* Inject KaTeX CSS */
+          ${katexCss}
           
           @page {
             size: A4;
@@ -119,6 +132,10 @@ export async function POST(req: NextRequest) {
     });
 
     console.log('Waiting for fonts...');
+    // @ts-ignore
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
     // Fonts are handled by networkidle0 above
 
     console.log('Generating PDF buffer...');
