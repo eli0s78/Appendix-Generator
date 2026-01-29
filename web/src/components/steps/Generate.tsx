@@ -53,6 +53,15 @@ export function Generate() {
   // AbortController ref for cancellation
   const generateAbortRef = useRef<AbortController | null>(null);
 
+  // Warmup the PDF generator on mount (unpack chromium)
+  useEffect(() => {
+    fetch('/api/export/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ warmup: true }),
+    }).catch(err => console.debug('PDF warmup skipped:', err));
+  }, []);
+
   const handleGenerate = async (group: ChapterGroup) => {
     if (!apiKey || !bookContent || !planningData) return;
 

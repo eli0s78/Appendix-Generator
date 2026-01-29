@@ -6,8 +6,9 @@ import path from 'path';
 
 // Interface for the request body
 interface PdfExportRequest {
-  html: string;
+  html?: string;
   styles?: string; // Optional custom styles to inject
+  warmup?: boolean;
 }
 
 // Allow longer execution time (Vercel Pro: 300s, Hobby: 10s - asking for max possible)
@@ -15,7 +16,20 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { html, styles }: PdfExportRequest = await req.json();
+    const { html, styles, warmup }: PdfExportRequest = await req.json();
+
+    // Warmup handling: Unpack Chromium without generating PDF
+    if (warmup) {
+      console.log('Warming up PDF generator environment...');
+      if (process.env.NODE_ENV !== 'development') {
+        process.env.AWS_LAMBDA_JS_RUNTIME = "nodejs20.x";
+        const chromium = (await import('@sparticuz/chromium-min')).default;
+        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
+        await chromium.executablePath(chromiumPack);
+        console.log('Chromium binary unpacked and ready.');
+      }
+      return NextResponse.json({ status: 'warmed' });
+    }
 
     if (!html) {
       return NextResponse.json(
