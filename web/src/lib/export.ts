@@ -933,9 +933,15 @@ export async function exportPlanningTableToPdf(planningData: PlanningDataExport)
   }
 
   // Save the PDF
-  const fileName = sanitizeFileName(planningData.book_overview.title) + '_planning.pdf';
-  doc.save(fileName);
+  doc.save(`${sanitizeFileName(planningData.book_overview.title)}_planning.pdf`);
 }
+
+/**
+ * Temporary Client-Side Export for Appendices (Step 4)
+ * Uses jsPDF directly in browser, bypassing server export.
+ * Note: Does not support full Markdown formatting (bold/italic) like the server version.
+ */
+
 
 /**
  * Export appendix content as PDF using jsPDF with Noto Sans Unicode font
@@ -1367,6 +1373,8 @@ function stripMarkdownFormatting(text: string, unicodeFontLoaded: boolean = true
 
   return result;
 }
+
+
 
 
 

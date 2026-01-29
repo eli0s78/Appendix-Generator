@@ -146,7 +146,6 @@ ${group.foresight_task}`;
         setPdfExportStatus({ isExporting: true, stage: 'Preparing layout...' });
 
         try {
-          // Double check content is rendered
           if (!printRef.current?.innerHTML) {
             throw new Error('Print content not ready');
           }
@@ -154,24 +153,33 @@ ${group.foresight_task}`;
           // Force a small delay to ensure MathJax/images are rendered
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          setPdfExportStatus(prev => ({ ...prev, stage: 'Generating PDF on server...' }));
-
+          // Convert Markdown to HTML for the PDF generator
+          console.log('Converting Markdown to HTML...');
           const htmlContent = printRef.current.innerHTML;
 
-          // Collect styles - naive approach: get all style tags and link tags
-          // Ideally we just trust the server's injected base styles + tailwind, 
-          // but if we have specific dynamic styles we might need them.
-          // For now, let's just send the HTML and rely on the server's tailwind/globals.
-          // Note: The server API adds some base styles.
+          // Add Tailwind typography classes to the HTML wrapper
+          const styledHtml = `
+            <div class="prose prose-sm max-w-none">
+              <h1 class="text-2xl font-bold mb-4" style="color: #4A4A8A;">${title}</h1>
+              ${htmlContent}
+            </div>
+          `;
 
+          setPdfExportStatus(prev => ({ ...prev, stage: 'Generating PDF on server...' }));
+
+          console.log('Sending request to PDF API...');
           const response = await fetch('/api/export/pdf', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              html: htmlContent,
-              // We could send specific styles here if needed
+              html: styledHtml,
+              // We can inject custom CSS here if needed
+              styles: `
+                h1, h2, h3 { color: #4A4A8A; }
+                blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; font-style: italic; }
+              `
             }),
           });
 
@@ -182,7 +190,7 @@ ${group.foresight_task}`;
 
           const blob = await response.blob();
 
-          // Dynamically import file-saver to avoid SSR issues if any (though this is client component)
+          // Dynamically import file-saver to avoid SSR issues
           const { saveAs } = await import('file-saver');
           saveAs(blob, `Appendix_${pdfGroupId}_${title}.pdf`);
 

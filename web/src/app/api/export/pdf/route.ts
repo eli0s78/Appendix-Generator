@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium-min';
+
 
 // Interface for the request body
 interface PdfExportRequest {
@@ -38,8 +38,11 @@ export async function POST(req: NextRequest) {
       } else {
         console.log('Launching Serverless Chromium (Remote)...');
 
-        // Remote URL for the chromium binary (matching the package version 126.0.0)
-        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v126.0.0/chromium-v126.0.0-pack.tar";
+        // Dynamically import chromium for serverless context
+        const chromium = (await import('@sparticuz/chromium-min')).default;
+
+        // Remote URL for the chromium binary (matching the package version 131.0.1)
+        const chromiumPack = "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
 
         browser = await puppeteer.launch({
           args: chromium.args,
