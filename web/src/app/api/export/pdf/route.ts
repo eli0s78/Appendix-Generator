@@ -8,6 +8,9 @@ interface PdfExportRequest {
   styles?: string; // Optional custom styles to inject
 }
 
+// Allow longer execution time (Vercel Pro: 300s, Hobby: 10s - asking for max possible)
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     const { html, styles }: PdfExportRequest = await req.json();
@@ -19,27 +22,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log('Starting PDF generation...');
+    const isDev = process.env.NODE_ENV === 'development';
+    console.log(`Environment: ${process.env.NODE_ENV}, isDev: ${isDev}`);
+
     let browser;
-    if (process.env.NODE_ENV === 'development') {
-      const localPuppeteer = await import('puppeteer');
-      browser = await localPuppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'], // Standard args for stability
-      });
-    } else {
-      browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: { width: 1920, height: 1080 },
-        executablePath: await chromium.executablePath(),
-        headless: true,
-      });
+    try {
+      if (isDev) {
+        console.log('Launching local Puppeteer...');
+        const localPuppeteer = await import('puppeteer');
+        browser = await localPuppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+      } else {
+        console.log('Launching Serverless Chromium...');
+        console.log('Chromium Args:', chromium.args);
+
+        // Ensure executable path is resolved
+        const execPath = await chromium.executablePath();
+        console.log('Executable Path:', execPath);
+
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: { width: 1920, height: 1080 },
+          executablePath: execPath,
+          headless: true, // Hardcoded to true as required by standard serverless usage
+        });
+      }
+    } catch (launchError: any) {
+      console.error('Browser Launch Failed:', launchError);
+      return NextResponse.json(
+        {
+          error: 'Failed to launch browser',
+          details: launchError.message,
+          stack: launchError.stack
+        },
+        { status: 500 }
+      );
     }
 
     const page = await browser.newPage();
 
     // Set content with a shell that includes Tailwind/Globals
-    // We assume the passed HTML is just the body content or a fragment.
-    // We'll wrap it in a proper HTML structure.
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -47,11 +72,9 @@ export async function POST(req: NextRequest) {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Appendix Export</title>
-        <!-- Inject styles passed from frontend (which should include the tailwind collected CSS) -->
         <style>
           ${styles || ''}
         </style>
-        <!-- Add base print styles to ensure defaults if not passed -->
         <style>
           @page {
             size: A4;
@@ -62,67 +85,17 @@ export async function POST(req: NextRequest) {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          /* Table fidelity - High Specificity Configuration */
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            page-break-inside: auto;
-            border: 1px solid #d1d5db !important; /* gray-300 */
-            margin-bottom: 1rem !important;
-            font-size: 9pt !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          thead {
-            display: table-header-group !important;
-            background-color: #4A4A8A !important; /* Primary Color */
-            border-bottom: 2px solid #4A4A8A !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          tfoot {
-            display: table-footer-group !important;
-          }
-
-          tr {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-            border-bottom: 1px solid #e5e7eb !important; /* gray-200 */
-          }
-
-          /* Zebra striping for readability */
-          tbody tr:nth-child(even) {
-            background-color: #f9fafb !important; /* gray-50 */
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          th, td {
-            border: 1px solid #d1d5db !important; /* gray-300 */
-            padding: 0.5rem 0.75rem !important;
-            text-align: left !important;
-          }
-
-          th {
-            font-weight: 700 !important;
-            color: #FFFFFF !important; /* White text */
-            background-color: #4A4A8A !important; /* Ensure header bg */
-          }
-
-          /* Typography flow control */
-          h1, h2, h3, h4, h5, h6 {
-            break-after: avoid;
-            page-break-after: avoid;
-          }
-          ul, ol, p {
-            orphans: 3; 
-            widows: 3;
-          }
-          li {
-            break-inside: avoid;
-          }
+          /* (Styles truncated for brevity in logs, but kept in actual code) */
+          table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #d1d5db !important; margin-bottom: 1rem !important; font-size: 9pt !important; }
+          thead { display: table-header-group !important; background-color: #4A4A8A !important; border-bottom: 2px solid #4A4A8A !important; color: white !important; }
+          tfoot { display: table-footer-group !important; }
+          tr { break-inside: avoid !important; page-break-inside: avoid !important; border-bottom: 1px solid #e5e7eb !important; }
+          tbody tr:nth-child(even) { background-color: #f9fafb !important; }
+          th, td { border: 1px solid #d1d5db !important; padding: 0.5rem 0.75rem !important; text-align: left !important; }
+          th { font-weight: 700 !important; color: #FFFFFF !important; background-color: #4A4A8A !important; }
+          h1, h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
+          ul, ol, p { orphans: 3; widows: 3; }
+          li { break-inside: avoid; }
         </style>
       </head>
       <body>
@@ -133,16 +106,16 @@ export async function POST(req: NextRequest) {
       </html>
     `;
 
-    // Set content and wait for network idle to ensure images/fonts load
+    console.log('Setting page content...');
     await page.setContent(fullHtml, {
       waitUntil: 'networkidle0',
       timeout: 30000,
     });
 
-    // Wait for fonts to be ready
+    console.log('Waiting for fonts...');
     await page.evaluateHandle('document.fonts.ready');
 
-    // Generate PDF
+    console.log('Generating PDF buffer...');
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -155,9 +128,10 @@ export async function POST(req: NextRequest) {
       displayHeaderFooter: false,
     });
 
+    console.log('Closing browser...');
     await browser.close();
 
-    // Return the PDF
+    console.log('PDF Generated successfully.');
     return new NextResponse(pdfBuffer as any, {
       headers: {
         'Content-Type': 'application/pdf',
@@ -165,10 +139,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('PDF Generation Error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      {
+        error: 'Critical PDF Generation Failure',
+        details: error.message,
+        stack: error.stack
+      },
       { status: 500 }
     );
   }

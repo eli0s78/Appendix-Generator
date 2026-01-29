@@ -176,7 +176,8 @@ ${group.foresight_task}`;
           });
 
           if (!response.ok) {
-            throw new Error('Failed to generate PDF on server');
+            const errorData = await response.json();
+            throw new Error(errorData.details || errorData.error || 'Failed to generate PDF on server');
           }
 
           const blob = await response.blob();
@@ -187,7 +188,7 @@ ${group.foresight_task}`;
 
         } catch (err) {
           console.error('PDF export error:', err);
-          setError('Failed to export PDF. Please try again.');
+          setError(err instanceof Error ? `PDF Error: ${err.message}` : 'Failed to export PDF.');
         } finally {
           setPdfExportStatus({ isExporting: false, stage: '' });
           setPdfGroupId(null);
