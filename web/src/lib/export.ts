@@ -473,77 +473,36 @@ export async function exportAllAsZip(
   }
 
   // 2. Add PDFs (Server-side, potentially slow)
-  if (pdfBatchGenerator) {
-    // Optimized Batch Processing
+  // We prioritize reliability over speed by using sequential processing with retries.
+  // Batching proved unreliable on Vercel due to payload/memory limits.
+  if (pdfGenerator) {
     const entries = Object.entries(appendices);
-    // Reduce batch size to 2 to avoid payload limits
-    const batchSize = 2;
 
-    // Process in chunks
-    for (let i = 0; i < entries.length; i += batchSize) {
-      const chunk = entries.slice(i, i + batchSize);
-
-      const payload = chunk.map(([groupId, content]) => ({
-        id: groupId,
-        content,
-        title: groupId // Simple title, generator can refine
-      }));
-
-      try {
-        // Generate batch
-        const results = await pdfBatchGenerator(payload);
-
-        // Add results to zip
-        for (const [id, base64] of Object.entries(results)) {
-          if (base64 && !base64.endsWith('_error')) {
-            const safeName = sanitizeFileName(id);
-            // Convert base64 to Blob
-            const binaryString = window.atob(base64);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let j = 0; j < binaryString.length; j++) {
-              bytes[j] = binaryString.charCodeAt(j);
-            }
-            folder.file(`${safeName}.pdf`, new Blob([bytes], { type: 'application/pdf' }));
-          } else {
-            // If individual item error, log it
-            console.error(`PDF generation failed for ${id}: ${base64}`);
-            // Note: Depending on logic, we could try to fallback for just this item here? 
-            // But simpler to let the fallback block below handle it? 
-            // No, fallback logic needs to be triggered if the *call* failed.
-            throw new Error(`Item ${id} failed in batch.`);
-          }
-        }
-      } catch (err) {
-        console.error(`Batch PDF generation failed for chunk ${i}, falling back to sequential:`, err);
-
-        // Fallback: Process this chunk sequentially using the single generator
-        if (pdfGenerator) {
-          for (const [groupId, content] of chunk) {
-            const safeName = sanitizeFileName(groupId);
-            try {
-              const pdfBlob = await pdfGenerator(content, groupId);
-              folder.file(`${safeName}.pdf`, pdfBlob);
-            } catch (seqErr) {
-              console.error(`Fallback sequential generation failed for ${groupId}:`, seqErr);
-            }
-            // Delay for safety
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      }
-    }
-
-  } else if (pdfGenerator) {
-    // Fallback to Sequential Single Processing (Legacy/Retry)
-    for (const [groupId, content] of Object.entries(appendices)) {
+    for (const [groupId, content] of entries) {
       const safeName = sanitizeFileName(groupId);
-      try {
-        const pdfBlob = await pdfGenerator(content, groupId);
-        folder.file(`${safeName}.pdf`, pdfBlob);
-      } catch (err) {
-        console.error(`Failed to generate PDF for ${groupId}:`, err);
+      let success = false;
+      let attempts = 0;
+      const maxAttempts = 2; // Try twice before giving up
+
+      while (!success && attempts < maxAttempts) {
+        attempts++;
+        try {
+          const pdfBlob = await pdfGenerator(content, groupId);
+          folder.file(`${safeName}.pdf`, pdfBlob);
+          success = true;
+        } catch (err) {
+          console.warn(`Attempt ${attempts}/${maxAttempts} failed for ${groupId}:`, err);
+          if (attempts < maxAttempts) {
+            // Wait 1s before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } else {
+            console.error(`Failed to generate PDF for ${groupId} after ${maxAttempts} attempts.`);
+          }
+        }
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Minimal delay between files to respect server limits
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
   }
 
