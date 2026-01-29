@@ -16,13 +16,14 @@ export function LoadingOverlay({ isOpen, message, subMessage, onCancel }: Loadin
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
-    if (!isOpen) {
-      setElapsedSeconds(0);
-      return;
-    }
+    if (!isOpen) return;
+
+    // eslint-disable-next-line
+    setElapsedSeconds(0);
     const interval = setInterval(() => {
       setElapsedSeconds((s) => s + 1);
     }, 1000);
+
     return () => clearInterval(interval);
   }, [isOpen]);
 

@@ -3,22 +3,7 @@
  * Converts markdown content to LaTeX format for compilation with SwiftLaTeX
  */
 
-/**
- * Escape special LaTeX characters
- */
-function escapeLatex(text: string): string {
-  return text
-    .replace(/\\/g, '\\textbackslash{}')
-    .replace(/&/g, '\\&')
-    .replace(/%/g, '\\%')
-    .replace(/\$/g, '\\$')
-    .replace(/#/g, '\\#')
-    .replace(/_/g, '\\_')
-    .replace(/\{/g, '\\{')
-    .replace(/\}/g, '\\}')
-    .replace(/~/g, '\\textasciitilde{}')
-    .replace(/\^/g, '\\textasciicircum{}');
-}
+
 
 /**
  * Convert Unicode arrows and symbols to LaTeX equivalents
@@ -171,8 +156,7 @@ function convertTable(lines: string[]): string {
 function convertList(lines: string[], startIndex: number): { latex: string; endIndex: number } {
   const result: string[] = [];
   let i = startIndex;
-  let currentIndent = 0;
-  let listStack: ('itemize' | 'enumerate')[] = [];
+  const listStack: ('itemize' | 'enumerate')[] = [];
 
   const getIndentLevel = (line: string): number => {
     const match = line.match(/^(\s*)/);
@@ -232,7 +216,7 @@ function convertList(lines: string[], startIndex: number): { latex: string; endI
 /**
  * Convert markdown code block to LaTeX
  */
-function convertCodeBlock(code: string, language?: string): string {
+function convertCodeBlock(code: string): string {
   // Simple verbatim environment for code
   return `\\begin{verbatim}\n${code}\n\\end{verbatim}`;
 }
@@ -258,14 +242,13 @@ export function markdownToLatex(markdown: string, title: string): string {
 
     // Code block
     if (trimmed.startsWith('```')) {
-      const language = trimmed.slice(3).trim();
       const codeLines: string[] = [];
       i++;
       while (i < lines.length && !lines[i].trim().startsWith('```')) {
         codeLines.push(lines[i]);
         i++;
       }
-      latexLines.push(convertCodeBlock(codeLines.join('\n'), language));
+      latexLines.push(convertCodeBlock(codeLines.join('\n')));
       i++; // Skip closing ```
       continue;
     }

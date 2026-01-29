@@ -452,8 +452,7 @@ function parseInlineFormatting(text: string, inheritedStyles: { bold?: boolean; 
 export async function exportAllAsZip(
   appendices: Record<string, string>,
   bookTitle: string,
-  pdfGenerator?: (content: string, title: string) => Promise<Blob>,
-  pdfBatchGenerator?: (items: Array<{ id: string, content: string, title: string }>) => Promise<Record<string, string>>
+  pdfGenerator?: (content: string, title: string) => Promise<Blob>
 ): Promise<void> {
   const zip = new JSZip();
   const folder = zip.folder('appendices');

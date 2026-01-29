@@ -20,7 +20,6 @@ import {
   Loader2,
   Brain,
   BookOpen,
-  Download,
   RefreshCw,
   ChevronRight,
   Sparkles,

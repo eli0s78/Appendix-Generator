@@ -86,6 +86,9 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     if (hasUnsavedChanges()) {
       setPendingAction('load');
       setShowConfirmDialog(true);
+    } else if (hasProjectData()) {
+      setPendingAction('load');
+      setShowConfirmDialog(true);
     } else {
       fileInputRef.current?.click();
     }
@@ -118,6 +121,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         try {
           const stream = file.stream().pipeThrough(new DecompressionStream('gzip'));
           const response = await new Response(stream).json();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const legacyData = response as any;
 
           // Map legacy data to new schema

@@ -225,9 +225,9 @@
   .markdown-preview thead,
   thead {
     display: table-header-group !important;
-    background-color: #4A4A8A !important;
-    /* Primary Color */
-    border-bottom: 2px solid #4A4A8A !important;
+    background-color: #0F172A !important;
+    /* Primary Color (Deep Navy) */
+    border-bottom: 2px solid #0F172A !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -237,7 +237,7 @@
     font-weight: 700 !important;
     color: #FFFFFF !important;
     /* White text */
-    background-color: #4A4A8A !important;
+    background-color: #0F172A !important;
     /* Ensure header bg */
   }
 

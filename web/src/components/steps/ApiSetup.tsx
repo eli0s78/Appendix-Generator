@@ -33,6 +33,7 @@ export function ApiSetup() {
     if (apiKey && apiKey !== inputKey) {
       setInputKey(apiKey);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
 
   const handleValidate = async () => {
