@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { useAppState, ChapterGroup } from '@/hooks/useAppState';
 import { callGemini, getWorkingModel } from '@/lib/gemini-client';
 import { getGenerationPrompt } from '@/lib/prompts';
-import { exportToMarkdown, exportToDocx, exportAppendixToPdf, exportAllAsZip } from '@/lib/export';
+import { exportToMarkdown, exportToDocx, exportAllAsZip } from '@/lib/export';
 import { MarkdownPreview } from '@/components/MarkdownPreview';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,12 @@ export function Generate() {
   );
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pdfExportStatus, setPdfExportStatus] = useState<{
+    isExporting: boolean;
+    stage: string;
+  }>({ isExporting: false, stage: '' });
+  const [pdfGroupId, setPdfGroupId] = useState<string | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // AbortController ref for cancellation
   const generateAbortRef = useRef<AbortController | null>(null);
@@ -125,18 +132,114 @@ ${group.foresight_task}`;
     }
   };
 
-  const handleDownloadPdf = async (groupId: string) => {
-    const content = generatedAppendices[groupId];
-    if (content) {
-      const group = planningData?.chapters?.find((g) => g.group_id === groupId);
-      const title = group?.chapter_titles?.join('_') || groupId;
-      await exportAppendixToPdf(content, `Appendix_${groupId}_${title}`);
-    }
+  const handleDownloadPdf = (groupId: string) => {
+    setPdfGroupId(groupId);
   };
+
+  // Effect to handle PDF generation when content is ready in the hidden div
+  useEffect(() => {
+    if (pdfGroupId && printRef.current && generatedAppendices[pdfGroupId]) {
+      const doExport = async () => {
+        const group = planningData?.chapters?.find(g => g.group_id === pdfGroupId);
+        const title = group?.chapter_titles?.join('_') || pdfGroupId;
+
+        setPdfExportStatus({ isExporting: true, stage: 'Preparing layout...' });
+
+        try {
+          // Double check content is rendered
+          if (!printRef.current?.innerHTML) {
+            throw new Error('Print content not ready');
+          }
+
+          // Force a small delay to ensure MathJax/images are rendered
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          setPdfExportStatus(prev => ({ ...prev, stage: 'Generating PDF on server...' }));
+
+          const htmlContent = printRef.current.innerHTML;
+
+          // Collect styles - naive approach: get all style tags and link tags
+          // Ideally we just trust the server's injected base styles + tailwind, 
+          // but if we have specific dynamic styles we might need them.
+          // For now, let's just send the HTML and rely on the server's tailwind/globals.
+          // Note: The server API adds some base styles.
+
+          const response = await fetch('/api/export/pdf', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              html: htmlContent,
+              // We could send specific styles here if needed
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to generate PDF on server');
+          }
+
+          const blob = await response.blob();
+
+          // Dynamically import file-saver to avoid SSR issues if any (though this is client component)
+          const { saveAs } = await import('file-saver');
+          saveAs(blob, `Appendix_${pdfGroupId}_${title}.pdf`);
+
+        } catch (err) {
+          console.error('PDF export error:', err);
+          setError('Failed to export PDF. Please try again.');
+        } finally {
+          setPdfExportStatus({ isExporting: false, stage: '' });
+          setPdfGroupId(null);
+        }
+      };
+
+      doExport();
+    }
+  }, [pdfGroupId, generatedAppendices, planningData]);
 
   const handleDownloadAll = async () => {
     if (Object.keys(generatedAppendices).length > 0 && planningData) {
-      await exportAllAsZip(generatedAppendices, planningData.book_overview.title);
+      // Define the PDF generator callback
+      const pdfGenerator = async (content: string, title: string): Promise<Blob> => {
+        // 1. Render Markdown to HTML using the same component as preview for consistency
+        const htmlContent = renderToStaticMarkup(<MarkdownPreview content={content} />);
+
+        // 2. Extract styles (optional but good for consistency if we successfully capture them)
+        // For now, we rely on the server's injected styles + Tailwind, similar to the single export.
+
+        // 3. Call API
+        const response = await fetch('/api/export/pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            html: htmlContent,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate PDF');
+        }
+
+        return await response.blob();
+      };
+
+      setPdfExportStatus({ isExporting: true, stage: 'Generating ZIP with PDFs...' });
+
+      try {
+        await exportAllAsZip(
+          generatedAppendices,
+          planningData.book_overview.title,
+          pdfGenerator
+        );
+      } catch (error) {
+        console.error("ZIP export failed:", error);
+        setError("Failed to generate ZIP file.");
+      } finally {
+        setPdfExportStatus({ isExporting: false, stage: '' });
+      }
     }
   };
 
@@ -155,12 +258,19 @@ ${group.foresight_task}`;
 
   return (
     <div className="space-y-6">
-      {/* Loading Overlay */}
+      {/* Loading Overlay for AI Generation */}
       <LoadingOverlay
         isOpen={isGenerating !== null}
         message="Generating Appendix"
         subMessage={`Creating foresight analysis for ${isGenerating}...`}
         onCancel={handleCancelGenerate}
+      />
+
+      {/* Loading Overlay for PDF Export */}
+      <LoadingOverlay
+        isOpen={pdfExportStatus.isExporting}
+        message="Exporting PDF"
+        subMessage={pdfExportStatus.stage}
       />
 
       {/* Progress Overview */}
@@ -197,17 +307,19 @@ ${group.foresight_task}`;
 
       {/* Tabs for each appendix */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted p-1">
+        <TabsList className="flex flex-wrap w-full !h-auto justify-start gap-2 p-2 bg-muted">
           {planningData.chapters?.map((group: ChapterGroup) => (
             <TabsTrigger
               key={group.group_id}
               value={group.group_id}
-              className="relative data-[state=active]:bg-background"
+              className="relative data-[state=active]:bg-background h-auto py-2 px-3 text-left whitespace-normal h-auto min-h-[2rem]"
             >
-              {group.group_id}
-              {generatedAppendices[group.group_id] && (
-                <CheckCircle2 className="w-3 h-3 ml-1 text-green-500" />
-              )}
+              <div className="flex items-center gap-2">
+                <span>{group.group_id}</span>
+                {generatedAppendices[group.group_id] && (
+                  <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0" />
+                )}
+              </div>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -312,6 +424,20 @@ ${group.foresight_task}`;
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Hidden Print Container */}
+      <div style={{ position: 'absolute', left: '-10000px', top: 0, width: '800px' }}>
+        <div ref={printRef} className="p-8 bg-white text-black prose prose-sm max-w-none">
+          {pdfGroupId && generatedAppendices[pdfGroupId] ? (
+            <>
+              <h1 className="text-2xl font-bold mb-6 border-b pb-2">
+                {planningData?.chapters?.find(g => g.group_id === pdfGroupId)?.chapter_titles?.join(' & ') || pdfGroupId}
+              </h1>
+              <MarkdownPreview content={generatedAppendices[pdfGroupId]} />
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

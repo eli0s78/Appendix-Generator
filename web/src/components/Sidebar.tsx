@@ -111,8 +111,51 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   // Load the file
   const loadFile = async (file: File) => {
     try {
-      const text = await file.text();
-      const data = JSON.parse(text);
+      let data;
+
+      // Check for legacy .appendix-session file (Gzip compressed JSON)
+      if (file.name.endsWith('.appendix-session')) {
+        try {
+          const stream = file.stream().pipeThrough(new DecompressionStream('gzip'));
+          const response = await new Response(stream).json();
+          const legacyData = response as any;
+
+          // Map legacy data to new schema
+          data = {
+            version: '1.0',
+            savedAt: legacyData.saved_at || new Date().toISOString(),
+            // Decode API key from base64 if present
+            apiKey: legacyData.api_key_encoded ? atob(legacyData.api_key_encoded) : null,
+            fileName: null,
+            bookContent: legacyData.book_content,
+            // Map legacy extraction info keys
+            extractionInfo: legacyData.extraction_info ? {
+              pages: legacyData.extraction_info.pages || 0,
+              estimatedWords: Math.round((legacyData.extraction_info.final_chars || 0) / 5),
+              estimatedChars: legacyData.extraction_info.final_chars || 0,
+              bibliographyRemoved: false, // Default
+              indexRemoved: false, // Default
+              wasTruncated: false, // Default
+              keptPercentage: 100
+            } : null,
+            planningData: legacyData.planning_data,
+            generatedAppendices: legacyData.generated_appendices || {},
+            forecastYears: 15, // Default
+            wordCountOption: '2500-3500', // Default
+            currentStep: legacyData.generated_appendices && Object.keys(legacyData.generated_appendices).length > 0 ? 4 : (legacyData.planning_data ? 3 : 2)
+          };
+
+          console.log("Legacy session imported successfully", data);
+        } catch (err) {
+          console.error("Failed to decompress legacy session:", err);
+          alert('Failed to load legacy session. The file might be corrupted.');
+          return;
+        }
+      } else {
+        // Standard JSON load
+        const text = await file.text();
+        data = JSON.parse(text);
+      }
 
       // Only require version field - other fields can be null/empty
       if (!data.version) {
@@ -121,7 +164,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       }
 
       loadProjectData(data);
-    } catch {
+    } catch (e) {
+      console.error(e);
       alert('Failed to load project file. Please check the file format.');
     }
   };
@@ -163,9 +207,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     <>
       {/* Sidebar Panel - Fixed position, no overlay */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-gray-50 border-r shadow-sm z-30 transition-all duration-200 flex flex-col ${
-          isOpen ? 'w-64' : 'w-0'
-        }`}
+        className={`fixed top-0 left-0 h-full bg-gray-50 border-r shadow-sm z-30 transition-all duration-200 flex flex-col ${isOpen ? 'w-64' : 'w-0'
+          }`}
         style={{ overflow: 'hidden' }}
       >
         <div className="flex flex-col h-full w-64">
@@ -207,7 +250,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".json"
+              accept=".json,.appendix-session"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -289,9 +332,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       {/* Toggle Button - Always visible */}
       <button
         onClick={onToggle}
-        className={`fixed top-4 z-40 p-2 bg-white rounded-r-lg shadow-md border border-l-0 hover:bg-gray-50 transition-all duration-200 ${
-          isOpen ? 'left-64' : 'left-0 rounded-lg border-l'
-        }`}
+        className={`fixed top-4 z-40 p-2 bg-white rounded-r-lg shadow-md border border-l-0 hover:bg-gray-50 transition-all duration-200 ${isOpen ? 'left-64' : 'left-0 rounded-lg border-l'
+          }`}
         aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
       >
         {isOpen ? (
@@ -310,12 +352,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </DialogTitle>
             <DialogDescription>
               {hasUnsavedChanges()
-                ? `You have unsaved changes. Do you want to save before you ${
-                    pendingAction === 'new' ? 'create a new project' : 'load another project'
-                  }?`
-                : `Are you sure you want to ${
-                    pendingAction === 'new' ? 'create a new project' : 'load another project'
-                  }? Your current project will be closed.`}
+                ? `You have unsaved changes. Do you want to save before you ${pendingAction === 'new' ? 'create a new project' : 'load another project'
+                }?`
+                : `Are you sure you want to ${pendingAction === 'new' ? 'create a new project' : 'load another project'
+                }? Your current project will be closed.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:gap-0">

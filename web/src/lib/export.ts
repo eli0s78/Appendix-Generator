@@ -2,7 +2,7 @@
  * Export utilities for generating downloadable files
  */
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, AlignmentType, LevelFormat } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, AlignmentType, LevelFormat, ShadingType } from 'docx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
@@ -46,6 +46,14 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
       const allRows = tableHeaders.length > 0 ? [tableHeaders, ...tableRows] : tableRows;
       const table = new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" }, // gray-300
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+          left: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+          right: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "E5E7EB" }, // gray-200
+          insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+        },
         rows: allRows.map((rowCells, rowIndex) =>
           new TableRow({
             children: rowCells.map((cellText) =>
@@ -56,10 +64,20 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
                   new Paragraph({
                     children: rowIndex === 0 && tableHeaders.length > 0
                       // Strip markdown formatting from headers before applying bold
-                      ? [new TextRun({ text: cellText.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1'), bold: true })]
+                      ? [new TextRun({ text: cellText.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1'), bold: true, size: 24, color: "FFFFFF" })] // White text
                       : parseInlineFormatting(cellText),
                   }),
                 ],
+                borders: rowIndex === 0 ? {
+                  bottom: { style: BorderStyle.SINGLE, size: 4, color: "4A4A8A" }, // Match header bg
+                } : undefined,
+                shading: {
+                  fill: rowIndex === 0
+                    ? "4A4A8A" // Header: Primary Color
+                    : (rowIndex % 2 !== 0 ? "FFFFFF" : "F9FAFB"), // Odd rows (index 1, 3...): White, Even rows (index 2, 4...): Gray-50
+                  type: ShadingType.CLEAR,
+                  color: "auto",
+                },
               })
             ),
           })
@@ -235,6 +253,16 @@ function createDocxFromMarkdown(markdown: string, title: string): Document {
         children,
       },
     ],
+    styles: {
+      default: {
+        document: {
+          run: {
+            size: 24, // 12pt
+            font: "Calibri",
+          },
+        },
+      },
+    },
     numbering: {
       config: [
         {
@@ -423,7 +451,8 @@ function parseInlineFormatting(text: string, inheritedStyles: { bold?: boolean; 
  */
 export async function exportAllAsZip(
   appendices: Record<string, string>,
-  bookTitle: string
+  bookTitle: string,
+  pdfGenerator?: (content: string, title: string) => Promise<Blob>
 ): Promise<void> {
   const zip = new JSZip();
   const folder = zip.folder('appendices');
@@ -442,6 +471,17 @@ export async function exportAllAsZip(
     const doc = createDocxFromMarkdown(content, groupId);
     const docxBlob = await Packer.toBlob(doc);
     folder.file(`${safeName}.docx`, docxBlob);
+
+    // Add PDF if generator provided
+    if (pdfGenerator) {
+      try {
+        const pdfBlob = await pdfGenerator(content, groupId);
+        folder.file(`${safeName}.pdf`, pdfBlob);
+      } catch (err) {
+        console.error(`Failed to generate PDF for ${groupId} in ZIP export:`, err);
+        // Continue without PDF for this item rather than failing the whole zip
+      }
+    }
   }
 
   const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -575,6 +615,7 @@ export async function exportPlanningTableToDocx(planningData: PlanningDataExport
               new TableCell({
                 width: { size: 25, type: WidthType.PERCENTAGE },
                 children: [new Paragraph({ children: [new TextRun({ text: label, bold: true })] })],
+                shading: { fill: "F5F5F5", type: ShadingType.CLEAR, color: "auto" },
               }),
               new TableCell({
                 width: { size: 75, type: WidthType.PERCENTAGE },
@@ -897,9 +938,15 @@ export async function exportPlanningTableToPdf(planningData: PlanningDataExport)
 }
 
 /**
- * Export appendix content as PDF (direct download)
+ * Export appendix content as PDF using jsPDF with Noto Sans Unicode font
+ * Supports proper bullets, arrows, and formatting
  */
-export async function exportAppendixToPdf(content: string, title: string): Promise<void> {
+export async function exportAppendixToPdf(
+  content: string,
+  title: string,
+  onProgress?: (stage: 'loading' | 'converting' | 'compiling' | 'done' | 'fallback') => void
+): Promise<void> {
+  onProgress?.('loading');
   // Load Unicode fonts
   await ensureFontsLoaded();
 
@@ -938,8 +985,13 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       .replace(/\*\*\*(.+?)\*\*\*/g, '**$1**')  // Keep bold from bold+italic
       .replace(/_(.+?)_/g, '$1')                 // Remove italic underscores
       .replace(/`(.+?)`/g, '$1')                 // Remove inline code
-      .replace(/\[(.+?)\]\(.+?\)/g, '$1')        // Remove links
-      .replace(/↓/g, 'v').replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '^');  // ASCII arrows
+      .replace(/\[(.+?)\]\(.+?\)/g, '$1');       // Remove links
+
+    // Only convert arrows to ASCII if Noto Sans is NOT loaded
+    if (!areFontsLoaded()) {
+      cleanText = cleanText
+        .replace(/↓/g, 'v').replace(/→/g, '->').replace(/←/g, '<-').replace(/↑/g, '^');
+    }
 
     // Check if text contains bold markers
     if (!cleanText.includes('**')) {
@@ -1137,12 +1189,15 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       doc.setTextColor(80, 80, 80);
       const match = line.match(/^(\s+)[-*] (.*)$/);
       if (match) {
-        const indent = Math.min(Math.floor(match[1].replace(/\t/g, '    ').length / 4), 3) * 8;
-        // Use 'o' as nested bullet - always works in any font
+        const indentLevel = Math.min(Math.floor(match[1].replace(/\t/g, '    ').length / 2), 4);
+        const indent = indentLevel * 6;
+        // Use proper Unicode nested bullets when Noto Sans is loaded
+        const nestedBullets = areFontsLoaded() ? ['◦', '▪', '▫', '‣'] : ['o', '-', '*', '+'];
+        const bullet = nestedBullets[Math.min(indentLevel - 1, nestedBullets.length - 1)];
         doc.setFont(fontName, 'normal');
-        doc.text('o', margin + indent, yPos);
+        doc.text(bullet, margin + indent, yPos);
         // Render text with bold support
-        const textHeight = renderTextWithBold(match[2], margin + indent + 6, yPos, contentWidth - 12 - indent);
+        const textHeight = renderTextWithBold(match[2], margin + indent + 5, yPos, contentWidth - 10 - indent);
         yPos += textHeight + 2;
       }
     }
@@ -1151,11 +1206,12 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
       checkPageBreak(8);
       doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
-      // Use '*' as bullet - guaranteed to work in all fonts
+      // Use proper Unicode bullet when Noto Sans is loaded
+      const bullet = areFontsLoaded() ? '•' : '-';
       doc.setFont(fontName, 'normal');
-      doc.text('*', margin, yPos);
+      doc.text(bullet, margin, yPos);
       // Render text with bold support
-      const textHeight = renderTextWithBold(trimmedLine.slice(2), margin + 8, yPos, contentWidth - 10);
+      const textHeight = renderTextWithBold(trimmedLine.slice(2), margin + 6, yPos, contentWidth - 8);
       yPos += textHeight + 2;
     }
     // Numbered list
@@ -1214,6 +1270,7 @@ export async function exportAppendixToPdf(content: string, title: string): Promi
   }
 
   // Save the PDF
+  onProgress?.('done');
   const fileName = sanitizeFileName(title) + '.pdf';
   doc.save(fileName);
 }
@@ -1269,9 +1326,9 @@ function renderPdfTable(
 /**
  * Strip markdown formatting for plain text (used in PDF)
  * @param text - The text to strip formatting from
- * @param _unicodeFontLoaded - Unused, kept for API compatibility
+ * @param unicodeFontLoaded - Whether Noto Sans Unicode font is loaded
  */
-function stripMarkdownFormatting(text: string, _unicodeFontLoaded: boolean = true): string {
+function stripMarkdownFormatting(text: string, unicodeFontLoaded: boolean = true): string {
   // Strip markdown formatting
   let result = text
     .replace(/\*\*\*(.+?)\*\*\*/g, '$1')  // Bold+Italic ***text***
@@ -1288,22 +1345,28 @@ function stripMarkdownFormatting(text: string, _unicodeFontLoaded: boolean = tru
     .replace(/`(.+?)`/g, '$1')             // Inline code
     .replace(/\[(.+?)\]\(.+?\)/g, '$1');   // Links [text](url)
 
-  // Always replace Unicode symbols with ASCII equivalents for PDF reliability
-  // Even with custom fonts, these characters can be unreliable in PDF rendering
-  result = result
-    .replace(/↓/g, 'v')                    // Down arrow
-    .replace(/→/g, '->')                   // Right arrow
-    .replace(/←/g, '<-')                   // Left arrow
-    .replace(/↑/g, '^')                    // Up arrow
-    .replace(/⬛/g, '*')                    // Black square
-    .replace(/◦/g, 'o')                    // White bullet
-    .replace(/◆/g, '*')                    // Diamond
-    .replace(/◇/g, 'o')                    // White diamond
-    .replace(/▶/g, '>')                    // Right triangle
-    .replace(/◀/g, '<')                    // Left triangle
-    .replace(/★/g, '*')                    // Star
-    .replace(/☆/g, '*');                   // White star
+  // Only convert Unicode symbols to ASCII if Noto Sans font is NOT loaded
+  // Noto Sans supports arrows and most Unicode symbols
+  if (!unicodeFontLoaded) {
+    result = result
+      .replace(/↓/g, 'v')                    // Down arrow
+      .replace(/→/g, '->')                   // Right arrow
+      .replace(/←/g, '<-')                   // Left arrow
+      .replace(/↑/g, '^')                    // Up arrow
+      .replace(/•/g, '*')                    // Bullet
+      .replace(/◦/g, 'o')                    // White bullet
+      .replace(/▪/g, '-')                    // Small square
+      .replace(/⬛/g, '*')                    // Black square
+      .replace(/◆/g, '*')                    // Diamond
+      .replace(/◇/g, 'o')                    // White diamond
+      .replace(/▶/g, '>')                    // Right triangle
+      .replace(/◀/g, '<')                    // Left triangle
+      .replace(/★/g, '*')                    // Star
+      .replace(/☆/g, '*');                   // White star
+  }
 
   return result;
 }
+
+
 

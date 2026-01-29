@@ -7,15 +7,15 @@
 
 import { jsPDF } from 'jspdf';
 
-// Google Fonts CDN URL for Noto Sans
-const NOTO_SANS_REGULAR_URL = 'https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A-9a6Vc.ttf';
-const NOTO_SANS_BOLD_URL = 'https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAjBe9a6Vc.ttf';
+// Google Fonts CDN URL for Noto Sans (v42 - latest as of 2025)
+const NOTO_SANS_REGULAR_URL = 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A-9a6Vc.ttf';
+const NOTO_SANS_BOLD_URL = 'https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBO9a6Vc.ttf';
 
 // Cache keys for localStorage
 const CACHE_KEY_REGULAR = 'pdf-font-noto-sans-regular';
 const CACHE_KEY_BOLD = 'pdf-font-noto-sans-bold';
 const CACHE_VERSION_KEY = 'pdf-font-cache-version';
-const CURRENT_CACHE_VERSION = '1';
+const CURRENT_CACHE_VERSION = '2'; // Updated v42 fonts
 
 // Track if fonts are registered
 let fontsRegistered = false;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, X } from 'lucide-react';
 
@@ -34,6 +34,7 @@ export function LoadingOverlay({ isOpen, message, subMessage, onCancel }: Loadin
   return (
     <Dialog open={isOpen}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
+        <DialogTitle className="sr-only">{message}</DialogTitle>
         <div className="flex flex-col items-center justify-center py-8 gap-4">
           <div className="relative">
             <Loader2 className="w-12 h-12 animate-spin text-primary" />
