@@ -15,8 +15,10 @@ interface PdfExportRequest {
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  let browser: any;
   try {
     const { html, styles, warmup }: PdfExportRequest = await req.json();
+    const isDev = process.env.NODE_ENV === 'development';
 
     // Warmup handling: Unpack Chromium without generating PDF
     if (warmup) {
@@ -39,10 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('Starting PDF generation...');
-    const isDev = process.env.NODE_ENV === 'development';
-    console.log(`Environment: ${process.env.NODE_ENV}, isDev: ${isDev}`);
-
-    let browser;
+    console.log('Starting PDF generation...');
     try {
       if (isDev) {
         console.log('Launching local Puppeteer...');
@@ -165,9 +164,6 @@ export async function POST(req: NextRequest) {
       displayHeaderFooter: false,
     });
 
-    console.log('Closing browser...');
-    await browser.close();
-
     console.log('PDF Generated successfully.');
     return new NextResponse(pdfBuffer as any, {
       headers: {
@@ -186,5 +182,10 @@ export async function POST(req: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    if (browser) {
+      console.log('Closing browser...');
+      await browser.close();
+    }
   }
 }

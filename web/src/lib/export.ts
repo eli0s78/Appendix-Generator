@@ -474,16 +474,28 @@ export async function exportAllAsZip(
 
     // Add PDF if generator provided
     if (pdfGenerator) {
-      try {
-        const pdfBlob = await pdfGenerator(content, groupId);
-        folder.file(`${safeName}.pdf`, pdfBlob);
-      } catch (err) {
-        console.error(`Failed to generate PDF for ${groupId} in ZIP export:`, err);
-        // Continue without PDF for this item rather than failing the whole zip
+      let pdfBlob: Blob | null = null;
+      let attempts = 0;
+      const maxAttempts = 2;
+
+      while (!pdfBlob && attempts < maxAttempts) {
+        try {
+          attempts++;
+          pdfBlob = await pdfGenerator(content, groupId);
+          folder.file(`${safeName}.pdf`, pdfBlob);
+        } catch (err) {
+          console.warn(`Attempt ${attempts}/${maxAttempts} failed for ${groupId}:`, err);
+          if (attempts < maxAttempts) {
+            // Wait longer before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } else {
+            console.error(`Failed to generate PDF for ${groupId} after ${maxAttempts} attempts.`);
+          }
+        }
       }
 
-      // Add a small delay to prevent overwhelming the serverless function
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Add a substantial delay to prevent overwhelming the serverless function (2s)
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
 
