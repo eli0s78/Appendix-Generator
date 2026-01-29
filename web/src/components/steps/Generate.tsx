@@ -221,19 +221,30 @@ ${group.foresight_task}`;
       // Define the PDF generator callback
       const pdfGenerator = async (content: string, title: string): Promise<Blob> => {
         // 1. Render Markdown to HTML using the same component as preview for consistency
-        const htmlContent = renderToStaticMarkup(<MarkdownPreview content={content} />);
+        const rawHtml = renderToStaticMarkup(<MarkdownPreview content={content} />);
 
-        // 2. Extract styles (optional but good for consistency if we successfully capture them)
-        // For now, we rely on the server's injected styles + Tailwind, similar to the single export.
+        // 2. Wrap effectively like the single export
+        const titleLine = planningData?.chapters?.find(g => g.group_id === title)?.chapter_titles?.join('_') || title;
 
-        // 3. Call API
+        const styledHtml = `
+            <div class="prose prose-sm max-w-none">
+              <h1 class="text-2xl font-bold mb-4" style="color: #4A4A8A;">${titleLine}</h1>
+              ${rawHtml}
+            </div>
+          `;
+
+        // 3. Call API with consistent styles
         const response = await fetch('/api/export/pdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            html: htmlContent,
+            html: styledHtml,
+            styles: `
+                h1, h2, h3 { color: #4A4A8A; }
+                blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; font-style: italic; }
+              `
           }),
         });
 

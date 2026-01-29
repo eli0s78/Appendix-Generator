@@ -481,6 +481,9 @@ export async function exportAllAsZip(
         console.error(`Failed to generate PDF for ${groupId} in ZIP export:`, err);
         // Continue without PDF for this item rather than failing the whole zip
       }
+
+      // Add a small delay to prevent overwhelming the serverless function
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
 
